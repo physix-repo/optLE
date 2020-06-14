@@ -34,26 +34,26 @@ An standard input file is copied into the bin dir during the `make` task. This
 file contains all the parameters and their description. This file is also
 available in [resources/input](./resources/input).
 
-The distributable iput file is the following:
+The input file is the following:
 
 ```
 colvar_file	   colvar               (format: t x, multiple trajectoires appended)	
 dt        	     0.01           (time step in colvar file)
 dtmult    	     10             (time step for integration dtint = dt/dtmult)
-xmin            -3.0            (better to take xmin and xmax large)
-xmax             3.0
+xmin            -1.8            (better to take xmin and xmax large)
+xmax             1.8
 xbins	          40            (used for x and v histograms)
 kT               5.0
 init_tau         400.
 opt_niter        500            (optimization steps, 0 = just print one traj and stop)
 opt_temp         1e-4 1e-5      (absolute error used as annealing T, initial and final)
-type_Langevin      1            (0 = overdamped, 1 = std, 2 = GLE)
+type_Langevin      0            (0 = overdamped, 1 = std, 2 = GLE)
 ratio_Langevin_MD  10           (ratio between number of Langevin traj and MD traj)
 fit_F              1
 fit_gamma          1
 fit_tau            0
 fit_mass           0
-type_error         1            (1 = -logLikelihood, 2 = RMSD)
+type_error         2            (1 = -logLikelihood, 2 = RMSD)
 pos_dep_gamma      1            (0 = fixed gamma, 1 = position-dependent gamma)
 pos_dep_mass       1            (0 = fixed mass , 1 = position-dependent mass )
 max_Gaussian_h   10.  5.   1.   (max height of Gaussians added to profiles F,g,m)
