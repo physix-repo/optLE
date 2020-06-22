@@ -260,10 +260,7 @@ subroutine read_input
     enddo
     close(35) 
     !
-    do i=1,ngrid-1
-      prof_force(i)=(prof_F(i)-prof_F(i+1))/dxgrid
-    enddo
-    prof_force(ngrid)=prof_force(ngrid-1)
+    call update_prof_force ! important, every time prof_F is changed!
     !
     if (fix_mass0.eq.1) then
       mass0=prof_m(int((x0(1)-xmin)/dxgrid)+1)

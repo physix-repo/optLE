@@ -89,6 +89,7 @@ subroutine optimize_Pmod
     prof_g = prof_g_old 
     prof_m = prof_m_old 
     taug   = taug_old          ! time constant of exp. memory function
+    call update_prof_force ! important, every time prof_F is changed!
 
     ! now move randomly the parameters
     mmmm="____"
@@ -115,6 +116,7 @@ subroutine optimize_Pmod
             prof_F=prof_F*r
           endif
           write(mmmm(1:1),'(A)') "f"
+          call update_prof_force ! important, every time prof_F is changed!
         endif
         jfit=jfit+1
       endif
@@ -182,7 +184,7 @@ subroutine optimize_Pmod
     deltae=err-err_old
     call random_number(r)
     ! OLD VERSION WITH RELATIVE ERROR: if (r<dexp(-(err-err_old)/(err_old*opt_temp))) then
-    if (r<dexp(-deltae/opt_temp)) then
+    if (r<dexp(-deltae/opt_temp)) then ! accepted
       err_old =err
       taug_old=taug
       prof_F_old  = prof_F

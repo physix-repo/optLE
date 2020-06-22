@@ -9,6 +9,20 @@ subroutine error(line)
 !
 end subroutine error
 !================================================================================
+subroutine update_prof_force
+!
+  use common_var
+  !
+  implicit none
+  integer :: i
+  !
+  do i=1,ngrid-1
+    prof_force(i)=(prof_F(i)-prof_F(i+1))/dxgrid
+  enddo
+  prof_force(ngrid)=prof_force(ngrid-1)
+!
+end subroutine update_prof_force
+!================================================================================
 subroutine print_profiles
 !
   use common_var
