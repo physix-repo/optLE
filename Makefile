@@ -4,7 +4,7 @@ switch=-O3 -cpp
 SRC_DIR=src
 BUILD_DIR=build
 BIN_DIR=bin
-objects = common_var.o main.o init.o interpolate.o optimization.o Langevin.o tools.o friction_daldrop.o
+objects = common_var.o main.o init.o interpolate.o optimization.o langevin.o tools.o friction_daldrop.o
 
 # standard version
 optle: builddirs $(objects)
@@ -21,7 +21,7 @@ interpolate.o: common_var.mod $(SRC_DIR)/interpolate.f90
 	$(FC) -o $(BUILD_DIR)/interpolate.o -c $(switch) $(SRC_DIR)/interpolate.f90
 optimization.o: common_var.mod $(SRC_DIR)/optimization.f90
 	$(FC) -o $(BUILD_DIR)/optimization.o -c $(switch) $(SRC_DIR)/optimization.f90
-Langevin.o: common_var.mod $(SRC_DIR)/Langevin.f90
+langevin.o: common_var.mod $(SRC_DIR)/Langevin.f90
 	$(FC) -o $(BUILD_DIR)/langevin.o -c $(switch) $(SRC_DIR)/Langevin.f90
 tools.o: common_var.mod $(SRC_DIR)/tools.f90
 	$(FC) -o $(BUILD_DIR)/tools.o -c $(switch) $(SRC_DIR)/tools.f90
