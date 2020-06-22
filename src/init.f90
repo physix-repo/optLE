@@ -18,7 +18,7 @@ subroutine read_input
 !kT               5.0
 !init_tau         400.
 !opt_niter        500            (optimization steps, 0 = just print one traj and stop)
-!opt_temp         1e-4 1e-5      (absolute error used as annealing T, initial and final)
+!opt_temp         1e-4 1e-5 0.05    (annealing T: initial, final, target acceptance)
 !type_Langevin      1            (0 = overdamped, 1 = std, 2 = GLE)
 !ratio_Langevin_MD  10           (ratio between number of Langevin traj and MD traj)
 !fit_F              1
@@ -29,7 +29,7 @@ subroutine read_input
 !pos_dep_gamma      1            (0 = fixed gamma, 1 = position-dependent gamma)
 !pos_dep_mass       1            (0 = fixed mass , 1 = position-dependent mass )
 !max_Gaussian_h   10.  5.   1.   (max height of Gaussians added to profiles F,g,m)
-!max_Gaussian_w   0.05 0.05 0.05 (max width of Gaussians added to profiles F,g,m)
+!max_Gaussian_w   0.05 0.05 0.05 (max width of Gaussians added, units of (xmax-xmin))
 !fix_mass0          1            (keep fixed the value of the mass at the TS)
 !use_velocity       1            (0 = optimize P(x,t), 1 = optimize P(x,v,t)
 ! 
@@ -82,9 +82,9 @@ subroutine read_input
   if (trim(keyword)/="opt_niter") call error("input: expected keyword opt_niter")
   write(*,*) keyword,opt_niter
   !
-  read(55,*) keyword,opt_temp1,opt_temp2
+  read(55,*) keyword,opt_temp1,opt_temp2,target_acc
   if (trim(keyword)/="opt_temp") call error("input: expected keyword opt_temp")
-  write(*,*) keyword,opt_temp1,opt_temp2
+  write(*,*) keyword,opt_temp1,opt_temp2,target_acc
   !
   read(55,*) keyword,type_Langevin
   if (trim(keyword)/="type_Langevin")  call error("input: expected keyword type_Langevin")
@@ -196,6 +196,13 @@ subroutine read_input
     write(*,*) "optimization of p(x,t) : velocity is not used"
   endif
   !
+  write(*,*) ""
+  if (target_acc.gt.0.d0.and.target_acc.lt.1.d0) then
+    write(*,*) "adapting opt_temp at each step to target acceptance =",target_acc
+  else
+    write(*,*) "opt_temp will be linearly changed between initial and final one"
+  endif
+  !
   dxgrid=(xmax-xmin)/dble(ngrid-1) 
   !
   !----------------------------- read colvar_file
@@ -252,6 +259,11 @@ subroutine read_input
       if (i.eq.ngrid.and.abs(x-xmax)>dxgrid) call error("xmax is different from last  position in RESTART")
     enddo
     close(35) 
+    !
+    do i=1,ngrid-1
+      prof_force(i)=(prof_F(i)-prof_F(i+1))/dxgrid
+    enddo
+    prof_force(ngrid)=prof_force(ngrid-1)
     !
     if (fix_mass0.eq.1) then
       mass0=prof_m(int((x0(1)-xmin)/dxgrid)+1)

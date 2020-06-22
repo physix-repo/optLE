@@ -4,8 +4,8 @@ subroutine optimize_Pmod
   use common_var
   !
   implicit none
-  integer :: i,j,iopt,ix,iv,it,imove,nacc,iu,ifit,jfit
-  double precision :: err1,err2,minerr1,minerr2, opt_temp
+  integer :: i,j,iopt,ix,iv,it,imove,nacc,nacc_last,iu,ifit,jfit
+  double precision :: err1,err2,minerr1,minerr2, opt_temp 
   double precision :: err,err_old,err_best,gamm_old,gamm_best
   double precision :: mass_old,mass_best,taug_old,taug_best
   double precision :: r,rr,rrr,x,deltae
@@ -68,18 +68,21 @@ subroutine optimize_Pmod
      " probability of rigidly scaling whole profiles in global moves  =",prob_global_scaleall
   endif
   !
-  nacc=0
+  nacc=0         ! total n of accepted moves
+  nacc_last=0    ! n of accepted moves in the last 100 steps
   !
   write(*,*) "########################################################################"
   write(*,*) "MAIN LOOP: iopt, err(-logL,RMSD), acc, gamm, taug, mass, moved_par, optT"
   write(*,*) "########################################################################"
   !
   gaussian=.true.
+  opt_temp=opt_temp1
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   do iopt=1,opt_niter ! opt loop
     !
     ! linear interpolation of T between T1 and T2
-    opt_temp=opt_temp1+(opt_temp2-opt_temp1)*dble(iopt)/dble(opt_niter)
+    !opt_temp=opt_temp1+(opt_temp2-opt_temp1)*dble(iopt)/dble(opt_niter)
+    opt_temp=opt_temp+(opt_temp2-opt_temp)/dble(opt_niter-iopt)
 
     ! reset parameters to last accepted values
     prof_F = prof_F_old 
@@ -158,7 +161,7 @@ subroutine optimize_Pmod
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     call compute_Pmod ! run ntraj_Langevin simulations and compute Pmod
     !
-    ! TODO: you can save time by comuting only the necessary type of error!
+    ! TODO: you can save time by computing only the necessary type of error!
     call compute_error(err1,1)
     call compute_error(err2,2)
     if (type_error.eq.1) err=err1
@@ -187,6 +190,7 @@ subroutine optimize_Pmod
       prof_m_old  = prof_m
       acc=" Y"
       nacc=nacc+1
+      nacc_last=nacc_last+1
       !
       if (err<err_best) then
         ! write profiles only if err is the best so far
@@ -221,6 +225,16 @@ subroutine optimize_Pmod
     !
     write(*,'(I6,2x,2E11.4,3X,A,3E12.4,3X,A4,3X,E11.4)') &
      iopt,err1,err2,acc,sum(prof_g(:))/ngrid,taug,sum(prof_m(:))/ngrid,mmmm,opt_temp
+    !
+    if (mod(iopt,100).eq.0) then
+      if (target_acc.gt.0.d0.and.target_acc.lt.1.d0) then
+        if (nacc_last.lt.(target_acc*70.d0))  opt_temp=opt_temp*1.2d0
+        if (nacc_last.gt.(target_acc*130.d0)) opt_temp=opt_temp*0.8d0
+        write(*,'(A,I3,A,I3,A,E11.4)') &
+         "### acc.moves/100= ",nacc_last," target= ",nint(target_acc*100)," newT= ",opt_temp
+        nacc_last=0
+      endif
+    endif
     !
     call flush()
   enddo ! opt loop

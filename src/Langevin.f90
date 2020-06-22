@@ -5,11 +5,12 @@ subroutine Langevin_traj_overdamped
   implicit none
   integer :: ix,iv,it,i,igrid1,igrid2,nstep
   double precision :: dtint,x,t,v,G,force,mforce,xold,xnew,vnew, mass
-  double precision :: noisefac,mynoise, tmp, D_over_kT(ngrid),sqrt_2_D_over_dt(ngrid)
+  double precision :: noisefac,mynoise, tmp 
+  double precision :: D_over_kT(ngrid),sqrt_2_D_over_dt(ngrid),dD_over_dx(ngrid)
   !---------------------------------------------------------------------------------- 
   ! D = kT / mg  (gamma is an inverse time)
   ! As integrator we use Euler-Maruyama:
-  !   x' = x + (D/kT)*F*dt sqrt(2*D*dt)*G
+  !   x' = x + (D/kT)*F*dt + dD/dx + sqrt(2*D*dt)*G
   ! with G a Gaussian random number with <G>=0, <G^2>=1
   !---------------------------------------------------------------------------------- 
   !TODO: store noise sequence (to avoid calling many times "noise")
@@ -21,6 +22,10 @@ subroutine Langevin_traj_overdamped
   ! igrid1 = int((x0now-xmin)/dxgrid)+1
   D_over_kT(:)   = 1.d0/(prof_m(:)*prof_g(:))
   sqrt_2_D_over_dt(:) = sqrt(2.d0*kT*D_over_kT(:)/dtint)
+  do igrid1=1,ngrid-1
+    dD_over_dx(igrid1)=kT*(D_over_kT(igrid1+1)-D_over_kT(igrid1))/dxgrid
+  enddo
+  dD_over_dx(ngrid)=dD_over_dx(ngrid-1)
   !
 #ifdef DEBUG
   write(111,'(A)') "# t,x,v  (with mforce)"
@@ -41,9 +46,9 @@ subroutine Langevin_traj_overdamped
     t = t+dtint
     !
     igrid1=int((x-xmin)/dxgrid)+1
-    igrid2=min(igrid1+1,ngrid)
+    !igrid2=min(igrid1+1,ngrid)
     !if (igrid1>=1.and.igrid2<=ngrid) then ! TODO avoid this to speed-up
-      force  = (prof_F(igrid1)-prof_F(igrid2))/dxgrid ! dim = m*s/t**2
+      force  = prof_force(igrid1) + dD_over_dx(igrid1) ! dim = m*s/t**2
       !!!if (mod(i,dtmult).eq.0) write(112,'(4E14.5)') force,mforce,mass,gamm !DDDDD
     !endif
     ! 
@@ -137,7 +142,7 @@ subroutine Langevin_traj_std ! TODO TODO TODO replace with Haynes JCP 101 7811 1
     igrid1=int((x-xmin)/dxgrid)+1
     igrid2=min(igrid1+1,ngrid)
     !if (igrid1>=1.and.igrid2<=ngrid) then ! TODO avoid this to speed-up
-      force  = (prof_F(igrid1)-prof_F(igrid2))/dxgrid ! dim = m*s/t**2
+      force  = prof_force(igrid1) ! dim = m*s/t**2
       mforce = (prof_m(igrid1)-prof_m(igrid2))/dxgrid ! dim = m*s/t**2
       mforce = 0.5d0*mforce*v*v
       gamm   = prof_g(igrid1)
@@ -244,17 +249,17 @@ subroutine Langevin_traj_GLEexp
     igrid1=int((x-xmin)/dxgrid)+1
     igrid2=min(igrid1+1,ngrid)
     !if (igrid1>=1.and.igrid2<=ngrid) then ! we avoid this to speed-up
-      force = (prof_F(igrid1)-prof_F(igrid2))  ! (with -) we still need /dxgrid 
+      force = prof_force(igrid1)
       mass  = prof_m(igrid1)
       v     = p/mass
-      mforce = 0.5*(mass-prof_m(igrid2))*v*v   ! (with -) we still need /dxgrid  
+      mforce = 0.5*(mass-prof_m(igrid2))*v*v/dxgrid   ! (with -) we still need /dxgrid  
       gamm  = prof_g(igrid1)
     !endif
     ! 
     call noise(G)
     ! 
     xnew = x + dtint*v
-    pnew = p + dtint*((force + mforce)/dxgrid + z*gamm)
+    pnew = p + dtint*((force + mforce) + z*gamm)
     znew = z - dtint*(eta0*p*gamm + z/taug) + facnoise*dsqrt(mass)*G
     ! TODO you can avoid computing dsqrt by storing also vector sqrtm(:) = dsqrt(prof_m(:)) ...
     x = xnew
