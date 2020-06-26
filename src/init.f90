@@ -25,7 +25,7 @@ subroutine read_input
 !fit_gamma          1
 !fit_tau            0
 !fit_mass           0
-!type_error         1            (1 = -logLikelihood, 2 = RMSD)
+!type_error         1            (1 = -logLik(KL), 2 = RMSD, 3 = -logLik(overdamped propagator))
 !pos_dep_gamma      1            (0 = fixed gamma, 1 = position-dependent gamma)
 !pos_dep_mass       1            (0 = fixed mass , 1 = position-dependent mass )
 !max_Gaussian_h   10.  5.   1.   (max height of Gaussians added to profiles F,g,m)
@@ -182,11 +182,16 @@ subroutine read_input
   !
   write(*,*) ""
   if (type_error.eq.1) then
-    write(*,*) "type_error = 1: using -logLikelihood (equiv. to Kullback-Leibler divergence)"
+    write(*,*) "type_error = 1: using -log(Likelihood) (equiv. to Kullback-Leibler divergence)"
   elseif (type_error.eq.2) then
     write(*,*) "type_error = 2: using RMSD of prob. distributions"
+  elseif (type_error.eq.3) then
+    write(*,*) "type_error = 3: using -log(Likelihood) (from overdamped propagator)"
+    if (type_Langevin.ne.0) then
+      call error("this error is implemented only for overdamped dynamics")
+    endif
   else  
-    call error("only type_error = 1 2 are implemented")
+    call error("only type_error = 1 2 3 are implemented")
   endif
   !
   write(*,*) ""
@@ -314,11 +319,15 @@ subroutine init_Pref
     endif
     !
     ix=int((colvar(i,2)-xmin)/dx)+1
-    if (it<nt) then
-      v=((colvar(i+1,2)-colvar(i,2))/dt) 
-      iv=int((v-vmin)/dv)+1
+    if (use_velocity==1) then
+      if (it<nt) then
+        v=((colvar(i+1,2)-colvar(i,2))/dt) 
+        iv=int((v-vmin)/dv)+1
+      else
+        iv=-1
+      endif
     else
-      iv=-1
+      iv=1
     endif
     !
     if (ix<1.or.ix>nx.or.iv<1.or.iv>nx) then

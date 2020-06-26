@@ -31,7 +31,9 @@ subroutine optimize_Pmod
   ! initial error:
   print_traj=.false.
   !
-  call compute_typical_min_error(minerr1,minerr2)
+  if (type_error==1.or.type_error==2) then
+    call compute_typical_min_error(minerr1,minerr2)
+  endif
   !
   call compute_Pmod ! run ntraj_Langevin simulations and compute Pmod
   call compute_error(err_old,type_error)
@@ -164,10 +166,16 @@ subroutine optimize_Pmod
     call compute_Pmod ! run ntraj_Langevin simulations and compute Pmod
     !
     ! TODO: you can save time by computing only the necessary type of error!
-    call compute_error(err1,1)
-    call compute_error(err2,2)
-    if (type_error.eq.1) err=err1
-    if (type_error.eq.2) err=err2
+    if (type_error==1.or.type_error==2) then 
+      call compute_error(err1,1)
+      call compute_error(err2,2)
+      if (type_error.eq.1) err=err1
+      if (type_error.eq.2) err=err2
+    elseif (type_error==3) then
+      call compute_error(err,3)
+      err1=err
+      err2=0.d0
+    endif
     !
     ! store the best F profiles in memory
     do i=1,nbestF
@@ -204,7 +212,7 @@ subroutine optimize_Pmod
         !
         iu=5000000+iopt
         open(iu,status="unknown")
-        write(iu,'(A,2E13.4)') "# x F F/kT gamma mass ; taug, err=",taug,err
+        write(iu,'(A,2E13.5)') "# x F F/kT gamma mass ; taug, err=",taug,err
         do i=1,ngrid
           x=xmin+dble(i-1)*dxgrid
           write(iu,'(5E13.4)') x,prof_F(i)-minval(prof_F(:)), &
@@ -225,7 +233,7 @@ subroutine optimize_Pmod
       !
     endif
     !
-    write(*,'(I6,2x,2E11.4,3X,A,3E12.4,3X,A4,3X,E11.4)') &
+    write(*,'(I6,2x,2E13.5,3X,A,3E12.4,3X,A4,3X,E11.4)') &
      iopt,err1,err2,acc,sum(prof_g(:))/ngrid,taug,sum(prof_m(:))/ngrid,mmmm,opt_temp
     !
     if (mod(iopt,100).eq.0) then
@@ -256,7 +264,7 @@ subroutine optimize_Pmod
   call print_profiles
   !
   write(*,*) "errors corresponding to the",nbestF," best free energy profiles:"
-  write(*,'(10E11.4)') bestF(1:nbestF,0)
+  write(*,'(10E13.5)') bestF(1:nbestF,0)
   bestF(nbestF+1,1:ngrid)=0.d0 ! here we store the average
   do i=1,nbestF
     x=sum(bestF(i,1:ngrid))/dble(ngrid)
@@ -315,12 +323,17 @@ subroutine compute_Pmod
   Pmod=0.D0
   !
   if (type_Langevin.eq.0) then
-    do itraj_MD=1,ntraj_MD
-      x0now=x0(itraj_MD)
-      do imult=1,ratio_Langevin_MD
-        call Langevin_traj_overdamped   ! this updates Pmod with one traj
+    if (type_error.ne.3) then 
+      do itraj_MD=1,ntraj_MD
+        x0now=x0(itraj_MD)
+        do imult=1,ratio_Langevin_MD
+          call Langevin_traj_overdamped   ! this updates Pmod with one traj
+        enddo
       enddo
-    enddo
+    else
+      ! likelihood of MD trajectory from overdamped propagator
+      continue 
+    endif
   elseif (type_Langevin.eq.1) then
     do itraj_MD=1,ntraj_MD
       x0now=x0(itraj_MD)

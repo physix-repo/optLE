@@ -11,7 +11,7 @@ module common_var
   logical :: print_traj
   double precision, allocatable :: colvar(:,:), x0(:)
   double precision, allocatable :: Pref(:,:,:), Pmod(:,:,:)
-  double precision :: mass0,gamm,D,taug
+  double precision :: mass0,gamm,taug
   double precision :: dxgrid
   integer, parameter :: ngrid=1000 ! this is arbitrary...
   double precision :: prof_F(ngrid),prof_force(ngrid),prof_g(ngrid),prof_m(ngrid)

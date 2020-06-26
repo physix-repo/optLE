@@ -50,8 +50,10 @@ subroutine compute_error(error,type_err)
   use common_var
   !
   implicit none
-  integer :: ix,iv,it, type_err
-  double precision :: error,eps,newnorm, p1,p2
+  integer :: ix,iv,it,i,igrid,nave,  type_err
+  double precision :: error,eps,newnorm
+  double precision :: dq, D(ngrid),dD_over_dx(ngrid),diff(ngrid),drift(ngrid)
+  double precision, parameter :: pi=3.14159265359d0
   !
   if (type_err.eq.1) then
     ! Kullback-Leibler divergence: err=sum(-Pref*log(Pmod/Pref))
@@ -59,30 +61,37 @@ subroutine compute_error(error,type_err)
     ! I use the latter, simpler, and shift a little bit to include empty regions ("smoothing"?)
     eps=(0.001D0)/dble(nx*nx*(nt+1))  ! altering total norm by 0.001 (arbitrary, but small)
     newnorm=1.D0+0.001D0
-    ! TODO improve using Gaussian kernels, and skip velocity when needed...
+    ! TODO improve using Gaussian kernels...
     error = -sum( Pref(:,:,:)*log((Pmod(:,:,:)+eps)/newnorm) )
   elseif (type_err.eq.2) then
     ! root mean square deviation
     if (use_velocity.eq.1) then
       error = dsqrt( sum((Pref(:,:,:)-Pmod(:,:,:))**2)/dble(nx*nx*(nt+1)) )
     else
-      error=0.d0
-      do ix=1,nx
-        do it=0,nt
-          p1 = sum(Pref(ix,1:nx,it))
-          p2 = sum(Pmod(ix,1:nx,it))
-          error = error + (p1-p2)*(p1-p2)
-        enddo
-      enddo
-      error = dsqrt( error/dble(nx*(nt+1)) )
+      error = dsqrt( sum((Pref(:,1,:)-Pmod(:,1,:))**2)/dble(nx*(nt+1)) )
     endif
   elseif (type_err.eq.3) then
-    ! Kolmogorov-Smirnov statistic on P(x,t) (discarding velocities...)
-    error = 0.d0
-    do iv=1,nx
-    !  error = error +  TODO !!!
+    ! log likelihood from short-time overdamped propagator
+    D(:)=kT/(prof_m(:)*prof_g(:))
+    do igrid=1,ngrid-1
+      dD_over_dx(igrid)=( D(igrid+1)-D(igrid) )/dxgrid
     enddo
+    dD_over_dx(ngrid)=dD_over_dx(ngrid-1)
+    diff(:)=4.d0*D(:)*dt
+    drift(:)=( D(:)*prof_force(:)/kT + dD_over_dx(:) )*dt
+    error=0.d0
+    nave=0
+    do i=2,nttot
+      if (colvar(i,1)-colvar(i-1,1)>0.d0) then ! (avoid time discontinuity)
+        dq    = colvar(i,2)-colvar(i-1,2)
+        igrid = int((colvar(i-1,2)-xmin)/dxgrid)+1
+        error = error + 0.5d0*log(diff(igrid)*pi) + (dq-drift(igrid))**2/(diff(igrid))
+        nave  = nave+1
+      endif 
+    enddo
+    error = error/dble(nave)
   endif
+  ! TODO: add also Kolmogorov-Smirnov statistic on P(x,t) (discarding velocities...)
 !
 end subroutine compute_error
 !======================================================================

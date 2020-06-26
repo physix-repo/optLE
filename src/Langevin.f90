@@ -33,13 +33,6 @@ subroutine Langevin_traj_overdamped
 #endif
   !
   xold=x
-!AAA  ix=int((x-xmin)/dx)+1
-!AAA  iv=int((v-vmin)/dv)+1
-!AAA  it=nint(t/dt) ! important to use nint!
-!AAA  if ((ix>=1.and.ix<=nx).and.(iv>=1.and.iv<=nx).and.(it>=0.and.it<=nt)) then
-!AAA    Pmod(ix,iv,it) = Pmod(ix,iv,it) + 1.D0
-!AAA    !debug write(*,*) ix,it,t,x
-!AAA  endif
   !!!!!!!!!!!!!!!! run one trajectory
   do i = 1,nstep ! main loop
     !
@@ -48,14 +41,14 @@ subroutine Langevin_traj_overdamped
     igrid1=int((x-xmin)/dxgrid)+1
     !igrid2=min(igrid1+1,ngrid)
     !if (igrid1>=1.and.igrid2<=ngrid) then ! TODO avoid this to speed-up
-      force  = prof_force(igrid1) + dD_over_dx(igrid1) ! dim = m*s/t**2
+      force  = prof_force(igrid1) ! dim = m*s/t**2
       !!!if (mod(i,dtmult).eq.0) write(112,'(4E14.5)') force,mforce,mass,gamm !DDDDD
     !endif
     ! 
     call noise(G) ! TODO: store in memory vector of G to accelerate?
     mynoise = sqrt_2_D_over_dt(igrid1)*G ! dim = s/t
     ! 
-    xnew = x + (D_over_kT(igrid1)*force+mynoise)*dtint ! TODO Euler-Maruyama... not the best one
+    xnew = x + (D_over_kT(igrid1)*force+dD_over_dx(igrid1)+mynoise)*dtint ! TODO Euler-Maruyama... try Milstein??
     x = xnew
     ! TODO: here is arbitrary, to avoid the cost of "if"
     x=max(x,xmin)
@@ -64,22 +57,22 @@ subroutine Langevin_traj_overdamped
 !    v=min(v,vmax)
     !
 #ifdef DEBUG
-    if (mod(i,dtmult).eq.0) write(111,'(E16.8,2E14.5)') t,x,v ! DEBUG traj
+    if (mod(i,dtmult).eq.0) write(111,'(E16.8,E14.5)') t,x ! DEBUG traj
 #endif
     !
     !it=nint(t/dt) ! important to use nint!
     if (mod(i,dtmult)==0) then 
 !AAA      ix=int((x-xmin)/dx)+1
       ix=int((xold-xmin)/dx)+1
-      iv=int(((x-xold)/dt-vmin)/dv)+1
-      iv=min(iv,nx)
-      iv=max(iv,1)
+      !iv=int(((x-xold)/dt-vmin)/dv)+1
+      !iv=min(iv,nx)
+      !iv=max(iv,1)
       xold=x
     ! if ((ix>=1.and.ix<=nx).and.(it>=0.and.it<=nt)) then ! TODO avoid this to speed-up
     !  if (iv>=1.and.iv<=nx) then ! TODO avoid this to speed-up
 !AAA        it=nint(t/dt) 
         it=nint(t/dt)-1 
-        Pmod(ix,iv,it) = Pmod(ix,iv,it) + 1.D0
+        Pmod(ix,1,it) = Pmod(ix,1,it) + 1.D0 ! no velocities here
     !  endif
       !debug write(*,*) ix,it,t,x
     !endif
