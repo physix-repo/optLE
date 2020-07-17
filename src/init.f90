@@ -358,16 +358,18 @@ subroutine init_Pref
   Pref=Pref/sum(Pref(:,:,0))
   !
 #ifndef DEBUG
-  write(*,*) "writing Pref file"
-  open(44,file="Pref",status="unknown")
-  do ix=1,nx
-    do iv=1,nx
-      do it=0,nt
-        write(44,'(4E11.3)') xmin+(dble(ix)-1.d0)*dx,vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Pref(ix,iv,it)
+  if (type_error.ne.3) then
+    write(*,*) "writing Pref file"
+    open(44,file="Pref",status="unknown")
+    do ix=1,nx
+      do iv=1,nx
+        do it=0,nt
+          write(44,'(4E11.3)') xmin+(dble(ix)-1.d0)*dx,vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Pref(ix,iv,it)
+        enddo
       enddo
     enddo
-  enddo
-  close(44)
+    close(44)
+  endif
 #endif
 !
 end subroutine init_Pref

@@ -9,9 +9,11 @@ subroutine Langevin_traj_overdamped
   double precision :: D_over_kT(ngrid),sqrt_2_D_over_dt(ngrid),dD_over_dx(ngrid)
   !---------------------------------------------------------------------------------- 
   ! D = kT / mg  (gamma is an inverse time)
-  ! As integrator we use Euler-Maruyama:
-  !   x' = x + (D/kT)*F*dt + dD/dx + sqrt(2*D*dt)*G
+  ! As integrator we can use Euler-Maruyama:
+  !   q' = q + ( (D/kT)*F + dD/dq )*dt + sqrt(2*D*dt)*G
   ! with G a Gaussian random number with <G>=0, <G^2>=1
+  ! or we can use Milstein (better for pos-dep D, see Kloeden-Platen 10.3):
+  !   q' = q + ( (D/kT)*F + 0.5*dD/dq )*dt + sqrt(2*D*dt)*G + 0.5*dD/dq*dt*G^2
   !---------------------------------------------------------------------------------- 
   !TODO: store noise sequence (to avoid calling many times "noise")
   dtint    = dt/dble(dtmult) ! TODO: do automatic test to see if it is sufficiently accurate...
@@ -46,9 +48,10 @@ subroutine Langevin_traj_overdamped
     !endif
     ! 
     call noise(G) ! TODO: store in memory vector of G to accelerate?
-    mynoise = sqrt_2_D_over_dt(igrid1)*G ! dim = s/t
+    ! mynoise  = sqrt_2_D_over_dt(igrid1)*G ! Euler-Maruyama
+    mynoise  = ( sqrt_2_D_over_dt(igrid1) + 0.5d0*dD_over_dx(igrid1)*G )*G ! Milstein
     ! 
-    xnew = x + (D_over_kT(igrid1)*force+dD_over_dx(igrid1)+mynoise)*dtint ! TODO Euler-Maruyama... try Milstein??
+    xnew = x + (D_over_kT(igrid1)*force+0.5d0*dD_over_dx(igrid1)+mynoise)*dtint 
     x = xnew
     ! TODO: here is arbitrary, to avoid the cost of "if"
     x=max(x,xmin)

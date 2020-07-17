@@ -295,19 +295,21 @@ subroutine optimize_Pmod
   !
   call compute_Pmod ! run ntraj_Langevin simulations and compute Pmod
   !write(*,*) "final trajectories written in fort.111"
-  open(33,file="Pmod",status="unknown")
-  open(34,file="Pdiff",status="unknown")
-  do ix=1,nx
-    do iv=1,nx
-      do it=0,nt
-        write(33,'(4E11.3)') xmin+(dble(ix)-1.d0)*dx,vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Pmod(ix,iv,it)
-        write(34,'(4E11.3)') xmin+(dble(ix)-1.d0)*dx,vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Pref(ix,iv,it)-Pmod(ix,iv,it)
+  if (type_error.ne.3) then
+    open(33,file="Pmod",status="unknown")
+    open(34,file="Pdiff",status="unknown")
+    do ix=1,nx
+      do iv=1,nx
+        do it=0,nt
+          write(33,'(4E11.3)') xmin+(dble(ix)-1.d0)*dx,vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Pmod(ix,iv,it)
+          write(34,'(4E11.3)') xmin+(dble(ix)-1.d0)*dx,vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Pref(ix,iv,it)-Pmod(ix,iv,it)
+        enddo
       enddo
     enddo
-  enddo
-  close(33)
-  close(34)
-  write(*,*) "written Pmod and Pdiff"
+    close(33)
+    close(34)
+    write(*,*) "written Pmod and Pdiff"
+  endif
   !
   ! clean memory
   deallocate(colvar)
