@@ -148,7 +148,9 @@ subroutine Langevin_traj_std ! TODO TODO TODO replace with Haynes JCP 101 7811 1
     mynoise = noisefac*G ! dim = s/t
     ! 
     xnew = x + dtint*v
-    vnew = v + dtint*((force+mforce)/mass -gamm*v) + mynoise
+    !vnew = v + dtint*((force+mforce)/mass -gamm*v) + mynoise ! TODO: put back mforce
+    vnew = v + dtint*((force)/mass -gamm*v) + mynoise
+    !write(114,*) (vnew-v-dtint*((force)/mass -gamm*v))/noisefac ! DEBUG
     x = xnew
     v = vnew
     ! TODO: here is arbitrary, to avoid the cost of "if"
@@ -162,7 +164,7 @@ subroutine Langevin_traj_std ! TODO TODO TODO replace with Haynes JCP 101 7811 1
 #endif
     !
     !it=nint(t/dt) ! important to use nint!
-    if (mod(i,dtmult)==0) then 
+    if (mod(i,dtmult)==0) then  ! avoid using double loop on time
 !AAA      ix=int((x-xmin)/dx)+1
       ix=int((xold-xmin)/dx)+1
       iv=int(((x-xold)/dt-vmin)/dv)+1
@@ -183,7 +185,7 @@ subroutine Langevin_traj_std ! TODO TODO TODO replace with Haynes JCP 101 7811 1
 !
 end subroutine Langevin_traj_std
 !================================================================================
-subroutine Langevin_traj_GLEexp
+subroutine Langevin_traj_GLEexp ! TODO TODO TODO replace with Haynes JCP 101 7811 1994
 !---------------------------------------------------------------------------------- 
 ! We adopt the following formulation:
 !  m*a = -dF/dx -int_0^t dt' g(x(t))*eta(t-t')*g(x(t'))*p(t') + g(x(t))*R
@@ -240,12 +242,13 @@ subroutine Langevin_traj_GLEexp
     t = t+dtint
     !
     igrid1=int((x-xmin)/dxgrid)+1
-    igrid2=min(igrid1+1,ngrid)
+    !igrid2=min(igrid1+1,ngrid)
     !if (igrid1>=1.and.igrid2<=ngrid) then ! we avoid this to speed-up
       force = prof_force(igrid1)
       mass  = prof_m(igrid1)
       v     = p/mass
-      mforce = 0.5*(mass-prof_m(igrid2))*v*v/dxgrid   ! (with -) we still need /dxgrid  
+      ! mforce = 0.5*(mass-prof_m(igrid2))*v*v/dxgrid   ! (with -) we still need /dxgrid  
+      mforce = 0.d0 ! TODO: check if we need to put back...
       gamm  = prof_g(igrid1)
     !endif
     ! 

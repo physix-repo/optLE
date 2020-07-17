@@ -233,8 +233,10 @@ subroutine optimize_Pmod
       !
     endif
     !
-    write(*,'(I6,2x,2E13.5,3X,A,3E12.4,3X,A4,3X,E11.4)') &
-     iopt,err1,err2,acc,sum(prof_g(:))/ngrid,taug,sum(prof_m(:))/ngrid,mmmm,opt_temp
+    if (acc.eq." Y") then
+      write(*,'(I8,2x,2E13.5,3X,A,3E12.4,3X,A4,3X,E11.4)') &
+       iopt,err1,err2,acc,sum(prof_g(:))/ngrid,taug,sum(prof_m(:))/ngrid,mmmm,opt_temp
+    endif
     !
     if (mod(iopt,100).eq.0) then
       if (target_acc.gt.0.d0.and.target_acc.lt.1.d0) then

@@ -186,9 +186,9 @@ subroutine read_input
   elseif (type_error.eq.2) then
     write(*,*) "type_error = 2: using RMSD of prob. distributions"
   elseif (type_error.eq.3) then
-    write(*,*) "type_error = 3: using -log(Likelihood) (from overdamped propagator)"
-    if (type_Langevin.ne.0) then
-      call error("this error is implemented only for overdamped dynamics")
+    write(*,*) "type_error = 3: using -log(Likelihood) (from short-time propagator)"
+    if (type_Langevin.gt.1) then
+      call error("this error is implemented only for overdamped and standard Langevin dynamics")
     endif
   else  
     call error("only type_error = 1 2 3 are implemented")
@@ -235,7 +235,7 @@ subroutine read_input
   allocate(x0(ntraj_MD)) ! here we store the shooting points (they can be different)
   nttot=i                ! total lines in colvar, i.e. total number of time frames
   nt=nint(tmax/dt)+1     ! number of time frames per trajectory, assuming equal durations 
-  allocate(colvar(nttot,2))
+  allocate(colvar(nttot,2),interp_colvar(nttot*dtmult,2))
   it=0
   do j=1,nttot
     read(66,*) colvar(j,1),colvar(j,2)
@@ -245,10 +245,24 @@ subroutine read_input
     endif
   enddo
   close(66)
+  ! linear interpolation of q(t) for dtmult>1
+  nt_interp=0
+  do i=1,nttot-1
+    if (colvar(i,1)<colvar(i+1,1)) then 
+      do j=1,dtmult
+        nt_interp=nt_interp+1
+        interp_colvar(nt_interp,1)=colvar(i,1)+(colvar(i+1,1)-colvar(i,1))*dble(j-1)/dble(dtmult)
+        interp_colvar(nt_interp,2)=colvar(i,2)+(colvar(i+1,2)-colvar(i,2))*dble(j-1)/dble(dtmult)
+        !write(333,*) interp_colvar(nt_interp,1),interp_colvar(nt_interp,2) ! DEBUG
+      enddo
+    endif
+  enddo
+  !
   ntraj_Langevin=ntraj_MD*ratio_Langevin_MD
   write(*,'(A,I9,I6,F12.3)') " total time frames, time frames per traj, tmax = ",nttot,nt,tmax
   write(*,'(A,I9)')          " number of MD shooting trajectories = ",ntraj_MD
-  if (ntraj_MD.ne.nint((1.d0*nttot)/nt)) call error("number of MD traj must be equal to total frames / frames per traj")
+!  if (ntraj_MD.ne.nint((1.d0*nttot)/nt)) call error("number of MD traj must be equal to total frames / frames per traj")
+  if (ntraj_MD.ne.nint((1.d0*nttot)/nt)) write(*,*) "WARNING: number of MD traj must be equal to total frames / frames per traj"
   !----------------------------- read RESTART
   ! if (restart.eq.1) then
     write(*,*) ""
