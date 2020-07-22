@@ -85,21 +85,21 @@ subroutine Langevin_traj_overdamped
 !
 end subroutine Langevin_traj_overdamped
 !================================================================================
-subroutine Langevin_traj_std ! TODO TODO TODO replace with Haynes JCP 101 7811 1994
+subroutine Langevin_traj_std ! TODO check Haynes JCP 101 7811 1994 ...?
 !
   use common_var
   !
   implicit none
   integer :: ix,iv,it,i,igrid1,igrid2,nstep
   double precision :: dtint,x,t,v,G,force,mforce,xold,xnew,vnew, mass
-  double precision :: noisefac,mynoise, tmp
+  double precision :: noisefac,mynoise, tmp, dD_over_dx(ngrid)
   !---------------------------------------------------------------------------------- 
   ! We follow Risken: m*a = F - m*g*v + R, <R(0)R(t)> = 2*m*g*k*T*delta(t), D = k*T/m*g
   ! in this way gamma is an inverse time.
-  ! As integrator we use Euler-Maruyama:
+  ! As integrator we use Milstein (like Euler-Maruyama plus the extra last term):
   !   x' = x + v*dt
-  !   v' = v + (F/m)*dt - g*v*dt + sqrt(dt*2*k*T*g/m)*G
-  ! with G a Gaussian random number with <G>=0, <G^2>=1
+  !   v' = v + (F/m)*dt - g*v*dt + sqrt(dt*2*D)*G + 0.5*(dD/dx)*(G^2-1)*dt
+  ! with D=kT*g/m, and G a Gaussian random number with <G>=0, <G^2>=1
   ! (e.g., see Vanden-Eijnden & Ciccotti, Chem Phys Lett 429, 310 (2006)) 
   !---------------------------------------------------------------------------------- 
   igrid1 = int((x0now-xmin)/dxgrid)+1
@@ -113,6 +113,11 @@ subroutine Langevin_traj_std ! TODO TODO TODO replace with Haynes JCP 101 7811 1
   call noise(G)
   v        = dsqrt(kT/mass)*G ! initial velocity: Boltzmann distribution
   tmp      = 2.D0*kT*dtint
+  ! gradient of D=kT*g/m for Milstein integrator:
+  do igrid1=1,ngrid-1
+    dD_over_dx(igrid1)=kT*(prof_g(igrid1+1)/prof_m(igrid1+1)-prof_g(igrid1)/prof_m(igrid1))/dxgrid
+  enddo
+  dD_over_dx(ngrid)=dD_over_dx(ngrid-1)
   !
 #ifdef DEBUG
   write(111,'(A)') "# t,x,v  (with mforce)"
@@ -152,7 +157,7 @@ subroutine Langevin_traj_std ! TODO TODO TODO replace with Haynes JCP 101 7811 1
     ! 
     xnew = x + dtint*v
     !vnew = v + dtint*((force+mforce)/mass -gamm*v) + mynoise ! TODO: put back mforce
-    vnew = v + dtint*((force)/mass -gamm*v) + mynoise
+    vnew = v + dtint*((force)/mass -gamm*v +0.5d0*dD_over_dx(igrid1)*(G*G-1.d0)) + mynoise
     !write(114,*) (vnew-v-dtint*((force)/mass -gamm*v))/noisefac ! DEBUG
     x = xnew
     v = vnew
