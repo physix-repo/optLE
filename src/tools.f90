@@ -45,12 +45,12 @@ subroutine print_profiles
 !
 end subroutine print_profiles
 !================================================================================
-subroutine compute_error(error,type_err)
+subroutine compute_error(error,type_err,iprintGauss)
 !
   use common_var
   !
   implicit none
-  integer :: ix,iv,it,i,ig,nave,type_err, prop_order
+  integer :: ix,iv,it,i,ig,nave,type_err,iprintGauss, prop_order
   double precision :: error,eps,newnorm
   double precision :: dq,ddq,diff(ngrid),delta
   double precision :: a(ngrid),da(ngrid),dda(ngrid)       ! drift       and derivatives
@@ -60,8 +60,9 @@ subroutine compute_error(error,type_err)
   double precision :: phi(ngrid),dphi(ngrid),ddphi(ngrid) ! force/m     and derivatives
   double precision :: gam(ngrid),dgam(ngrid),ddgam(ngrid) ! gamma       and derivatives
   double precision :: q,v,v1,v2,q3,q2,q1,q0,f1,g1,sigma2,tau 
-  double precision :: g,dg,dt2,dt3,tmp
+  double precision :: g,dg,dt2,dt3,tmp, qq,vv
   double precision :: Mq,Mqq,Mv,Mvv,Mqv,detM
+  double precision :: Lqq,Lqv,Lvv
   double precision, parameter :: pi=3.14159265359d0, pi2=pi*pi
   !
   if (type_err.eq.1) then
@@ -83,6 +84,11 @@ subroutine compute_error(error,type_err)
     endif
     !
   elseif (type_err.eq.3) then
+    !
+    if (iprintGauss.eq.1) then
+      ! here we write deviations from model: it should be a normalized Gaussian
+      open(123,file="Gauss",status="unknown") 
+    endif
     !
     if (type_Langevin.eq.0) then
       !
@@ -140,8 +146,13 @@ subroutine compute_error(error,type_err)
             ig = int((colvar(i-1,2)-xmin)/dxgrid)+1 ! pre-point
             Mq    = a(ig)*dt+0.5d0*( a(ig)*da(ig)+dda(ig)*D(ig) )*dt*dt ! we leave q out
             Mqq   = 2.d0*D(ig)*dt+( a(ig)*dD(ig)+2.d0*da(ig)*D(ig)+D(ig)*ddD(ig) )*dt*dt
-            error = error + 0.5d0*log(2.d0*pi*Mqq) + (dq-Mq)**2 / (2.d0*Mqq)
+            qq    = dq-Mq
+            error = error + 0.5d0*log(2.d0*pi*Mqq) + qq*qq / (2.d0*Mqq)
             nave  = nave+1
+            !
+            if (iprintGauss.eq.1) then
+              write(123,'(f9.5)') sqrt(1.d0/Mqq)*qq
+            endif
           endif 
         enddo
         error = error/dble(nave)
@@ -210,9 +221,20 @@ subroutine compute_error(error,type_err)
           Mqv = D(ig)*dt2 + (dD(ig)*v-3.d0*D(ig)*g)*dt3/3.d0
           detM = Mqq*Mvv-Mqv*Mqv 
           !
+          qq = (q2-Mq)
+          vv = (v2-Mv)
           error = error + 0.5d0*log(4.d0*pi2*detM) &
-                + ( 0.5d0*Mvv*(q2-Mq)**2 + 0.5d0*Mqq*(v2-Mv)**2 - Mqv*(q2-Mq)*(v2-Mv) )/detM
+                + ( 0.5d0*Mvv*qq*qq + 0.5d0*Mqq*vv*vv - Mqv*qq*vv )/detM
           nave  = nave+1
+          !
+          if (iprintGauss.eq.1) then
+            ! we need Cholesky decomposition to get vector 
+            !  of Gaussian numbers with zero mean and unit variance:
+            Lqq = dsqrt(Mvv)
+            Lqv = -Mqv/Lqq
+            Lvv = dsqrt(Mqq-Mqv*Mqv/Mvv)
+            write(123,'(2f9.5)') (Lqq*qq+Lqv*vv)/dsqrt(detM), Lqv*vv/dsqrt(detM)
+          endif
         endif 
       enddo
 !      do i=3,nt_interp
@@ -237,6 +259,10 @@ subroutine compute_error(error,type_err)
       !
     endif
     !
+    if (iprintGauss.eq.1) then
+      close(123)
+    endif
+    !
   endif
   ! TODO: add also Kolmogorov-Smirnov statistic on P(x,t) (discarding velocities...)
 !
@@ -258,8 +284,8 @@ subroutine compute_typical_min_error(minerr1,minerr2)
   ! compute 2nd Pmod (a particular realization depending on random sequence)
   call compute_Pmod ! run ntraj_Langevin simulations and compute Pmod
   ! compute errors between the two Pmod obtained from identical parameters
-  call compute_error(minerr1,1)  
-  call compute_error(minerr2,2)  
+  call compute_error(minerr1,1,0)  
+  call compute_error(minerr2,2,0)  
   write(*,'(A,2E11.4)') " typical min error (between two realizations of the same model) = ",&
    minerr1,minerr2
   ! store back the original Pref

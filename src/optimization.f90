@@ -36,7 +36,7 @@ subroutine optimize_Pmod
   endif
   !
   call compute_Pmod ! run ntraj_Langevin simulations and compute Pmod
-  call compute_error(err_old,type_error)
+  call compute_error(err_old,type_error,1)
   write(*,'(A,E13.4)') " initial error = ",err_old
   !
   prof_F_old  = prof_F ! note: prof_F has units, is not divided by kT
@@ -84,7 +84,7 @@ subroutine optimize_Pmod
     !
     ! linear interpolation of T between T1 and T2
     !opt_temp=opt_temp1+(opt_temp2-opt_temp1)*dble(iopt)/dble(opt_niter)
-    opt_temp=opt_temp+(opt_temp2-opt_temp)/dble(opt_niter-iopt)
+    !opt_temp=opt_temp+(opt_temp2-opt_temp)/dble(opt_niter-iopt) ! REACTIVATE IF NECESSARY
 
     ! reset parameters to last accepted values
     prof_F = prof_F_old 
@@ -167,12 +167,12 @@ subroutine optimize_Pmod
     !
     ! TODO: you can save time by computing only the necessary type of error!
     if (type_error==1.or.type_error==2) then 
-      call compute_error(err1,1)
-      call compute_error(err2,2)
+      call compute_error(err1,1,0)
+      call compute_error(err2,2,0)
       if (type_error.eq.1) err=err1
       if (type_error.eq.2) err=err2
     elseif (type_error==3) then
-      call compute_error(err,3)
+      call compute_error(err,3,0)
       err1=err
       err2=0.d0
     endif
@@ -219,6 +219,10 @@ subroutine optimize_Pmod
            (prof_F(i)-minval(prof_F(:)))/kT,prof_g(i),prof_m(i)
         enddo
         close(iu)
+        !
+        if (type_error==3) then
+          call compute_error(err,3,1)
+        endif
         !
         !open(33,file="Pmod",status="unknown")
         !do ix=1,nx
