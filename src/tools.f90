@@ -16,8 +16,8 @@ subroutine update_prof_force
   implicit none
   integer :: i
   !
-  do i=1,ngrid-1
-    prof_force(i)=(prof_F(i)-prof_F(i+1))/dxgrid
+  do i=2,ngrid-1
+    prof_force(i)=(prof_F(i-1)-prof_F(i+1))/dxgrid2
   enddo
   prof_force(ngrid)=prof_force(ngrid-1)
 !
@@ -95,14 +95,16 @@ subroutine compute_error(error,type_err,iprintGauss)
       ! log likelihood from short-time overdamped propagator
       prop_order = 2   ! order of the propagator: TODO choose in the input
       !
+      D(:)=kT/(prof_m(:)*prof_g(:))
+      do ig=2,ngrid-1
+        dD(ig)=( D(ig+1)-D(ig-1) )/dxgrid2
+      enddo
+      dD(1)    =dD(2)
+      dD(ngrid)=dD(ngrid-1)
+      a(:)=( D(:)*prof_force(:)/kT + dD(:) )
+      !
       if (prop_order.eq.1) then
-        D(:)=kT/(prof_m(:)*prof_g(:))
-        do ig=1,ngrid-1
-          dD(ig)=( D(ig+1)-D(ig) )/dxgrid
-        enddo
-        dD(ngrid)=dD(ngrid-1)
         !diff(:)=4.d0*D(:)*dt
-        a(:)=( D(:)*prof_force(:)/kT + dD(:) )
         error=0.d0
         nave=0
         do i=2,nttot
@@ -120,23 +122,20 @@ subroutine compute_error(error,type_err,iprintGauss)
       endif
       !
       if (prop_order.eq.2) then
-        D(:)=kT/(prof_m(:)*prof_g(:))
-        do ig=1,ngrid-1
-          dD(ig)=( D(ig+1)-D(ig) )/dxgrid
+        do ig=2,ngrid-1
+          ddD(ig)=( dD(ig+1)-dD(ig-1) )/dxgrid2
         enddo
-        dD(ngrid)=dD(ngrid-1)
-        do ig=1,ngrid-1
-          ddD(ig)=( dD(ig+1)-dD(ig) )/dxgrid
-        enddo
+        ddD(1)    =ddD(2)
         ddD(ngrid)=ddD(ngrid-1)
-        a(:)=( D(:)*prof_force(:)/kT + dD(:) )
-        do ig=1,ngrid-1
-          da(ig)=( a(ig+1)-a(ig) )/dxgrid
+        do ig=2,ngrid-1
+          da(ig)=( a(ig+1)-a(ig-1) )/dxgrid2
         enddo
+        da(1)    =da(2)
         da(ngrid)=da(ngrid-1)
-        do ig=1,ngrid-1
-          dda(ig)=( da(ig+1)-da(ig) )/dxgrid
+        do ig=2,ngrid-1
+          dda(ig)=( da(ig+1)-da(ig-1) )/dxgrid2
         enddo
+        dda(1)    =dda(2)
         dda(ngrid)=dda(ngrid-1)
         error=0.d0
         nave=0
@@ -164,46 +163,53 @@ subroutine compute_error(error,type_err,iprintGauss)
       ! note that b=phi-gamma*v, phi=force/m, D=gamma/m*beta, db/dv=-gamma
       !
       D(:)=prof_g(:)*kT/prof_m(:)
-      do ig=1,ngrid-1
-        dD(ig)=( D(ig+1)-D(ig) )/dxgrid
+      do ig=2,ngrid-1
+        dD(ig)=( D(ig+1)-D(ig+1) )/dxgrid2
       enddo
+      dD(1)    =dD(2)
       dD(ngrid)=dD(ngrid-1)
-      do ig=1,ngrid-1
-        ddD(ig)=( dD(ig+1)-dD(ig) )/dxgrid
+      do ig=2,ngrid-1
+        ddD(ig)=( dD(ig+1)-dD(ig+1) )/dxgrid2
       enddo
+      ddD(1)    =ddD(2)
       ddD(ngrid)=ddD(ngrid-1)
       !
       phi(:)=prof_force(:)/prof_m(:)
-      do ig=1,ngrid-1
-        dphi(ig)=( phi(ig+1)-phi(ig) )/dxgrid
+      do ig=2,ngrid-1
+        dphi(ig)=( phi(ig+1)-phi(ig-1) )/dxgrid2
       enddo
+      dphi(1)    =dphi(2)
       dphi(ngrid)=dphi(ngrid-1)
-      do ig=1,ngrid-1
-        ddphi(ig)=( dphi(ig+1)-dphi(ig) )/dxgrid
+      do ig=2,ngrid-1
+        ddphi(ig)=( dphi(ig+1)-dphi(ig-1) )/dxgrid2
       enddo
+      ddphi(1)    =ddphi(2)
       ddphi(ngrid)=ddphi(ngrid-1)
       !
       gam(:)=prof_g(:)
-      do ig=1,ngrid-1
-        dgam(ig)=( gam(ig+1)-gam(ig) )/dxgrid
+      do ig=2,ngrid-1
+        dgam(ig)=( gam(ig+1)-gam(ig-1) )/dxgrid2
       enddo
+      dgam(1)    =dgam(2)
       dgam(ngrid)=dgam(ngrid-1)
-      do ig=1,ngrid-1
-        ddgam(ig)=( dgam(ig+1)-dgam(ig) )/dxgrid
+      do ig=2,ngrid-1
+        ddgam(ig)=( dgam(ig+1)-dgam(ig-1) )/dxgrid2
       enddo
+      ddgam(1)    =ddgam(2)
       ddgam(ngrid)=ddgam(ngrid-1)
       dt2=dt*dt
       dt3=dt2*dt
       !
       error=0.d0
       nave=0
-      do i=3,nttot
-        if (colvar(i,1)-colvar(i-2,1)>0.d0) then ! (avoid time discontinuity)
+      do i=4,nttot
+        if (colvar(i,1)-colvar(i-3,1)>0.d0) then ! (avoid time discontinuity)
+          q0     = colvar(i-3,2)
           q      = colvar(i-2,2)
           q2     = colvar(i-1,2)
           q3     = colvar(i  ,2)
-          v      = ( q2-q  )/dt
-          v2     = ( q3-q2 )/dt
+          v      = ( q2-q0 )/(2.d0*dt) ! central finite difference
+          v2     = ( q3-q  )/(2.d0*dt) ! central finite difference
           ig     = int((q-xmin)/dxgrid)+1
           b      =   phi(ig)  -gam(ig)*v
           db     =  dphi(ig) -dgam(ig)*v

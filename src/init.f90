@@ -209,6 +209,7 @@ subroutine read_input
   endif
   !
   dxgrid=(xmax-xmin)/dble(ngrid-1) 
+  dxgrid2=2.d0*dxgrid
   !
   !----------------------------- read colvar_file
   write(*,*) ""

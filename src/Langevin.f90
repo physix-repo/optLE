@@ -24,9 +24,10 @@ subroutine Langevin_traj_overdamped
   ! igrid1 = int((x0now-xmin)/dxgrid)+1
   D_over_kT(:)   = 1.d0/(prof_m(:)*prof_g(:))
   sqrt_2_D_over_dt(:) = sqrt(2.d0*kT*D_over_kT(:)/dtint)
-  do igrid1=1,ngrid-1
-    dD_over_dx(igrid1)=kT*(D_over_kT(igrid1+1)-D_over_kT(igrid1))/dxgrid
+  do igrid1=2,ngrid-1
+    dD_over_dx(igrid1)=kT*(D_over_kT(igrid1+1)-D_over_kT(igrid1-1))/dxgrid2
   enddo
+  dD_over_dx(1)    =dD_over_dx(2)
   dD_over_dx(ngrid)=dD_over_dx(ngrid-1)
   !
 #ifdef DEBUG
@@ -114,10 +115,12 @@ subroutine Langevin_traj_std ! TODO check Haynes JCP 101 7811 1994 ...?
   v        = dsqrt(kT/mass)*G ! initial velocity: Boltzmann distribution
   tmp      = 2.D0*kT*dtint
   ! gradient of D=kT*g/m for Milstein integrator:
-  do igrid1=1,ngrid-1
-    dD_over_dx(igrid1)=kT*(prof_g(igrid1+1)/prof_m(igrid1+1)-prof_g(igrid1)/prof_m(igrid1))/dxgrid
+  do igrid1=2,ngrid-1
+    dD_over_dx(igrid1)=kT*(prof_g(igrid1+1)/prof_m(igrid1+1)-prof_g(igrid1-1)/prof_m(igrid1-1))/dxgrid2
   enddo
+  dD_over_dx(1)    =dD_over_dx(2)
   dD_over_dx(ngrid)=dD_over_dx(ngrid-1)
+  ! dD_over_dx=0.d0 ! Euler-Maruyama
   !
 #ifdef DEBUG
   write(111,'(A)') "# t,x,v  (with mforce)"
@@ -144,8 +147,8 @@ subroutine Langevin_traj_std ! TODO check Haynes JCP 101 7811 1994 ...?
     igrid2=min(igrid1+1,ngrid)
     !if (igrid1>=1.and.igrid2<=ngrid) then ! TODO avoid this to speed-up
       force  = prof_force(igrid1) ! dim = m*s/t**2
-      mforce = (prof_m(igrid1)-prof_m(igrid2))/dxgrid ! dim = m*s/t**2
-      mforce = 0.5d0*mforce*v*v
+      !mforce = (prof_m(igrid1)-prof_m(igrid2))/dxgrid ! dim = m*s/t**2
+      !mforce = 0.5d0*mforce*v*v
       gamm   = prof_g(igrid1)
       mass   = prof_m(igrid1)
       noisefac = dsqrt(tmp*gamm/mass) ! dim = s/t
