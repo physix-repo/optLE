@@ -244,6 +244,8 @@ subroutine read_input
       it=it+1
       x0(it)=colvar(j,2)
     endif
+    if (colvar(j,2).gt.xmax) call error("position larger than xmax !")
+    if (colvar(j,2).lt.xmin) call error("position smaller than xmin !")
   enddo
   close(66)
   ! compute numerical velocity dq/dt
