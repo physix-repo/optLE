@@ -50,7 +50,7 @@ subroutine compute_error(error,type_err,iprintGauss)
   use common_var
   !
   implicit none
-  integer :: ix,iv,it,i,ig,nave,type_err,iprintGauss, prop_order
+  integer :: ix,iv,it,i,j,ig,nave,type_err,iprintGauss, prop_order
   double precision :: error,eps,newnorm
   double precision :: dq,ddq,diff(ngrid),delta
   double precision :: a(ngrid),da(ngrid),dda(ngrid)       ! drift       and derivatives
@@ -60,7 +60,7 @@ subroutine compute_error(error,type_err,iprintGauss)
   double precision :: phi(ngrid),dphi(ngrid),ddphi(ngrid) ! force/m     and derivatives
   double precision :: gam(ngrid),dgam(ngrid),ddgam(ngrid) ! gamma       and derivatives
   double precision :: q,v,v1,v2,q3,q2,q1,q0,f1,g1,sigma2,tau 
-  double precision :: g,dg,dt2,dt3,tmp, qq,vv
+  double precision :: g,dg,ddt,ddt2,ddt3,tmp, qq,vv
   double precision :: Mq,Mqq,Mv,Mvv,Mqv,detM
   double precision :: Lqq,Lqv,Lvv
   double precision, parameter :: pi=3.14159265359d0, pi2=pi*pi
@@ -85,6 +85,10 @@ subroutine compute_error(error,type_err,iprintGauss)
     !
   elseif (type_err.eq.3) then
     !
+    ddt =dt*dtmult
+    ddt2=ddt*ddt
+    ddt3=ddt2*ddt
+    !
     if (iprintGauss.eq.1) then
       ! here we write deviations from model: it should be a normalized Gaussian
       open(123,file="Gauss",status="unknown") 
@@ -104,19 +108,17 @@ subroutine compute_error(error,type_err,iprintGauss)
       a(:)=( D(:)*prof_force(:)/kT + dD(:) )
       !
       if (prop_order.eq.1) then
-        !diff(:)=4.d0*D(:)*dt
         error=0.d0
         nave=0
-        do i=2,nttot
-          if (colvar(i,1)-colvar(i-1,1)>0.d0) then ! (avoid time discontinuity)
-            dq    = colvar(i,2)-colvar(i-1,2)
-            ig = int((colvar(i-1,2)-xmin)/dxgrid)+1
-            Mq    = a(ig)*dt ! we leave q out
-            Mqq   = 2.d0*D(ig)*dt
+        do i=1,n_tprop
+          do j=ibeg_tprop(i),iend_tprop(i)-dtmult,dtmult
+            dq    = colvar(j+dtmult,2)-colvar(j,2)
+            ig    = int((colvar(j,2)-xmin)/dxgrid)+1
+            Mq    = a(ig)*ddt ! we leave q out
+            Mqq   = 2.d0*D(ig)*ddt
             error = error + 0.5d0*log(2.d0*pi*Mqq) + (dq-Mq)**2 / (2.d0*Mqq)
-            !error = error + 0.5d0*log(diff(ig)*pi) + (dq-a(ig)*dt)**2/(diff(ig))
             nave  = nave+1
-          endif 
+          enddo
         enddo
         error = error/dble(nave)
       endif
@@ -137,14 +139,15 @@ subroutine compute_error(error,type_err,iprintGauss)
         enddo
         dda(1)    =dda(2)
         dda(ngrid)=dda(ngrid-1)
+        !
         error=0.d0
         nave=0
-        do i=2,nttot
-          if (colvar(i,1)-colvar(i-1,1)>0.d0) then ! (avoid time discontinuity)
-            dq    = colvar(i,2)-colvar(i-1,2)
-            ig = int((colvar(i-1,2)-xmin)/dxgrid)+1 ! pre-point
-            Mq    = a(ig)*dt+0.5d0*( a(ig)*da(ig)+dda(ig)*D(ig) )*dt*dt ! we leave q out
-            Mqq   = 2.d0*D(ig)*dt+( a(ig)*dD(ig)+2.d0*da(ig)*D(ig)+D(ig)*ddD(ig) )*dt*dt
+        do i=1,n_tprop
+          do j=ibeg_tprop(i),iend_tprop(i)-dtmult,dtmult
+            dq    = colvar(j+dtmult,2)-colvar(j,2)
+            ig    = int((colvar(j,2)-xmin)/dxgrid)+1 ! pre-point
+            Mq    = a(ig)*ddt+0.5d0*( a(ig)*da(ig)+dda(ig)*D(ig) )*ddt2 ! we leave q out
+            Mqq   = 2.d0*D(ig)*ddt+( a(ig)*dD(ig)+2.d0*da(ig)*D(ig)+D(ig)*ddD(ig) )*ddt2
             qq    = dq-Mq
             error = error + 0.5d0*log(2.d0*pi*Mqq) + qq*qq / (2.d0*Mqq)
             nave  = nave+1
@@ -152,7 +155,7 @@ subroutine compute_error(error,type_err,iprintGauss)
             if (iprintGauss.eq.1) then
               write(123,'(f9.5)') sqrt(1.d0/Mqq)*qq
             endif
-          endif 
+          enddo
         enddo
         error = error/dble(nave)
       endif
@@ -197,19 +200,15 @@ subroutine compute_error(error,type_err,iprintGauss)
       enddo
       ddgam(1)    =ddgam(2)
       ddgam(ngrid)=ddgam(ngrid-1)
-      dt2=dt*dt
-      dt3=dt2*dt
       !
       error=0.d0
       nave=0
-      do i=4,nttot
-        if (colvar(i,1)-colvar(i-3,1)>0.d0) then ! (avoid time discontinuity)
-          q0     = colvar(i-3,2)
-          q      = colvar(i-2,2)
-          q2     = colvar(i-1,2)
-          q3     = colvar(i  ,2)
-          v      = ( q2-q0 )/(2.d0*dt) ! central finite difference
-          v2     = ( q3-q  )/(2.d0*dt) ! central finite difference
+      do i=1,n_tprop
+        do j=ibeg_tprop(i),iend_tprop(i)-dtmult,dtmult
+          q      = colvar(j,2)
+          q2     = colvar(j+dtmult,2)
+          v      = colvar(j,3)
+          v2     = colvar(j+dtmult,3)
           ig     = int((q-xmin)/dxgrid)+1
           b      =   phi(ig)  -gam(ig)*v
           db     =  dphi(ig) -dgam(ig)*v
@@ -218,13 +217,13 @@ subroutine compute_error(error,type_err,iprintGauss)
           dg     = dgam(ig)
           !
           tmp = (db*v-b*g)
-          Mq  = q + v*dt + b*dt2/2.d0 + tmp*dt3/6.d0
-          Mqq = 2.d0*D(ig)*dt3/3.d0
-          Mv  = v + b*dt + tmp*dt2/2.d0 &
-              + ((ddb*v-db*g-2.d0*b*dg)*v+b*db+b*g*g-2.d0*D(ig)*dg)*dt3/6.d0
-          Mvv = 2.d0*D(ig)*dt + (dD(ig)*v-2.d0*D(ig)*g)*dt2 &
-              + ((ddD(ig)*v-2.d0*dD(ig)*g-4.d0*D(ig)*dg)*v+dD(ig)*b+2.d0*D(ig)*(db+2.d0*g*g))*dt3/3.d0
-          Mqv = D(ig)*dt2 + (dD(ig)*v-3.d0*D(ig)*g)*dt3/3.d0
+          Mq  = q + v*ddt + b*ddt2/2.d0 + tmp*ddt3/6.d0
+          Mqq = 2.d0*D(ig)*ddt3/3.d0
+          Mv  = v + b*ddt + tmp*ddt2/2.d0 &
+              + ((ddb*v-db*g-2.d0*b*dg)*v+b*db+b*g*g-2.d0*D(ig)*dg)*ddt3/6.d0
+          Mvv = 2.d0*D(ig)*ddt + (dD(ig)*v-2.d0*D(ig)*g)*ddt2 &
+              + ((ddD(ig)*v-2.d0*dD(ig)*g-4.d0*D(ig)*dg)*v+dD(ig)*b+2.d0*D(ig)*(db+2.d0*g*g))*ddt3/3.d0
+          Mqv = D(ig)*ddt2 + (dD(ig)*v-3.d0*D(ig)*g)*ddt3/3.d0
           detM = Mqq*Mvv-Mqv*Mqv 
           !
           qq = (q2-Mq)
@@ -241,26 +240,8 @@ subroutine compute_error(error,type_err,iprintGauss)
             Lvv = dsqrt(Mqq-Mqv*Mqv/Mvv)
             write(123,'(2f9.5)') (Lqq*qq+Lqv*vv)/dsqrt(detM), Lqv*vv/dsqrt(detM)
           endif
-        endif 
+        enddo
       enddo
-!      do i=3,nt_interp
-!        if (interp_colvar(i,1)-interp_colvar(i-2,1)>0.d0) then ! (avoid time discontinuity)
-!          q2     = interp_colvar(i,2)
-!          q1     = interp_colvar(i-1,2)
-!          q0     = interp_colvar(i-2,2)
-!          ddq    = ( q2-2.d0*q1+q0 )/tau
-!          dq     = q1-q0 
-!          ig  = int((q1-xmin)/dxgrid)+1
-!          f1     = prof_force(ig)
-!          m1     = prof_m(ig)
-!          g1     = prof_g(ig)
-!          delta  = ( ddq - tau*f1/m1 + g1*dq )
-!          sigma2 = tau*2.d0*kT*g1/m1
-!          delta  = delta*delta / sigma2
-!          error  = error + 0.5d0*log(2.d0*pi*sigma2) + 0.5d0*delta ! missing the normalization here
-!          nave   = nave+1
-!        endif 
-!      enddo
       error = error/dble(nave)
       !
     endif

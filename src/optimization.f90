@@ -238,7 +238,7 @@ subroutine optimize_Pmod
     endif
     !
     if (acc.eq." Y") then
-      write(*,'(I8,2x,2E13.5,3X,A,3E12.4,3X,A4,3X,E11.4)') &
+      write(*,'(I8,2x,2E14.6,3X,A,3E12.4,3X,A4,3X,E11.4)') &
        iopt,err1,err2,acc,sum(prof_g(:))/ngrid,taug,sum(prof_m(:))/ngrid,mmmm,opt_temp
     endif
     !

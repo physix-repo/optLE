@@ -236,7 +236,7 @@ subroutine read_input
   allocate(x0(ntraj_MD)) ! here we store the shooting points (they can be different)
   nttot=i                ! total lines in colvar, i.e. total number of time frames
   nt=nint(tmax/dt)+1     ! number of time frames per trajectory, assuming equal durations 
-  allocate(colvar(nttot,2),interp_colvar(nttot*dtmult,2))
+  allocate(colvar(nttot,3)) ! time q dq/dt
   it=0
   do j=1,nttot
     read(66,*) colvar(j,1),colvar(j,2)
@@ -246,16 +246,39 @@ subroutine read_input
     endif
   enddo
   close(66)
-  ! linear interpolation of q(t) for dtmult>1
-  nt_interp=0
-  do i=1,nttot-1
-    if (colvar(i,1)<colvar(i+1,1)) then 
-      do j=1,dtmult
-        nt_interp=nt_interp+1
-        interp_colvar(nt_interp,1)=colvar(i,1)+(colvar(i+1,1)-colvar(i,1))*dble(j-1)/dble(dtmult)
-        interp_colvar(nt_interp,2)=colvar(i,2)+(colvar(i+1,2)-colvar(i,2))*dble(j-1)/dble(dtmult)
-        !write(333,*) interp_colvar(nt_interp,1),interp_colvar(nt_interp,2) ! DEBUG
-      enddo
+  ! compute numerical velocity dq/dt
+  colvar(:,3)=0.d0
+  do j=2,nttot-1
+    if (colvar(j+1,1).gt.colvar(j-1,1)) then ! avoid time discontinuity
+      colvar(j,3) = ( colvar(j+1,2)-colvar(j-1,2) )/(2.d0*dt)
+    endif 
+  enddo
+  ! store indeces of q,dq/dt points for propagator estimation
+  ! note: when using type_err=3 (propagator-based likelihood)
+  !       we use q,dq/dt skipping every dtmult, where
+  !       i_prop contains the starting point of every trajectory
+  allocate(ibeg_tprop(nttot/dtmult+1),iend_tprop(nttot/dtmult+1))
+  n_tprop=1
+  ibeg_tprop(1)=2
+  iend_tprop(1)=2
+  write(*,*) "lines at beginning and end of trajectories with stride dtmult:"
+  do j=3,nttot-1
+    if (colvar(j,1).lt.colvar(j-1,1)) then
+      n_tprop=n_tprop+1
+      ibeg_tprop(n_tprop)=j+1 ! skip t=0 to allow calculation of velocity
+      iend_tprop(n_tprop)=j+1 
+    else
+      ! skip last time of each traj to allow calculation of velocity
+      if (((j-iend_tprop(n_tprop)).eq.dtmult).and.(colvar(j+1,1).gt.colvar(j,1))) then
+        iend_tprop(n_tprop)=j
+      endif
+    endif
+  enddo
+  do j=1,n_tprop
+    if ((j.le.5).or.(j.ge.n_tprop-4)) then
+      write(*,'(i6,i9,i9)') j,ibeg_tprop(j),iend_tprop(j)
+    else
+      if (j.eq.6) write(*,*) "..."
     endif
   enddo
   !
