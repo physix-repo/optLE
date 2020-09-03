@@ -33,9 +33,9 @@ subroutine optimize_Pmod
   !
   if (type_error==1.or.type_error==2) then
     call compute_typical_min_error(minerr1,minerr2)
+    call compute_Pmod ! run ntraj_Langevin simulations and compute Pmod
   endif
   !
-  call compute_Pmod ! run ntraj_Langevin simulations and compute Pmod
   call compute_error(err_old,type_error,1)
   write(*,'(A,E13.4)') " initial error = ",err_old
   !
@@ -163,10 +163,9 @@ subroutine optimize_Pmod
     !
     if (fix_mass0.eq.1) prof_m = mass0*prof_m/prof_m(int((x0-xmin)/dxgrid)+1)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    call compute_Pmod ! run ntraj_Langevin simulations and compute Pmod
     !
-    ! TODO: you can save time by computing only the necessary type of error!
     if (type_error==1.or.type_error==2) then 
+      call compute_Pmod ! run ntraj_Langevin simulations and compute Pmod
       call compute_error(err1,1,0)
       call compute_error(err2,2,0)
       if (type_error.eq.1) err=err1
@@ -331,17 +330,12 @@ subroutine compute_Pmod
   Pmod=0.D0
   !
   if (type_Langevin.eq.0) then
-    if (type_error.ne.3) then 
-      do itraj_MD=1,ntraj_MD
-        x0now=x0(itraj_MD)
-        do imult=1,ratio_Langevin_MD
-          call Langevin_traj_overdamped   ! this updates Pmod with one traj
-        enddo
+    do itraj_MD=1,ntraj_MD
+      x0now=x0(itraj_MD)
+      do imult=1,ratio_Langevin_MD
+        call Langevin_traj_overdamped   ! this updates Pmod with one traj
       enddo
-    else
-      ! likelihood of MD trajectory from overdamped propagator
-      continue 
-    endif
+    enddo
   elseif (type_Langevin.eq.1) then
     do itraj_MD=1,ntraj_MD
       x0now=x0(itraj_MD)
