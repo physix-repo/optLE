@@ -37,7 +37,7 @@ subroutine optimize_Pmod
   endif
   !
   call compute_error(err_old,type_error,1)
-  write(*,'(A,E13.4)') " initial error = ",err_old
+  write(*,'(A,E13.5)') " initial error = ",err_old
   !
   prof_F_old  = prof_F ! note: prof_F has units, is not divided by kT
   prof_g_old  = prof_g
@@ -214,7 +214,7 @@ subroutine optimize_Pmod
         write(iu,'(A,2E13.5)') "# x F F/kT gamma mass ; taug, err=",taug,err
         do i=1,ngrid
           x=xmin+dble(i-1)*dxgrid
-          write(iu,'(5E13.4)') x,prof_F(i)-minval(prof_F(:)), &
+          write(iu,'(5E13.5)') x,prof_F(i)-minval(prof_F(:)), &
            (prof_F(i)-minval(prof_F(:)))/kT,prof_g(i),prof_m(i)
         enddo
         close(iu)

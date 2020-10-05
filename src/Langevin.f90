@@ -32,7 +32,7 @@ subroutine Langevin_traj_overdamped
   !
 #ifdef DEBUG
   write(111,'(A)') "# t,x,v  (with mforce)"
-  write(111,'(E16.8,2E14.5)') t,x,v ! DEBUG traj
+  write(111,'(F18.8,2F18.10)') t,x,v ! DEBUG traj
 #endif
   !
   xold=x
@@ -61,7 +61,7 @@ subroutine Langevin_traj_overdamped
 !    v=min(v,vmax)
     !
 #ifdef DEBUG
-    if (mod(i,dtmult).eq.0) write(111,'(E16.8,E14.5)') t,x ! DEBUG traj
+    if (mod(i,dtmult).eq.0) write(111,'(F18.8,2F18.10)') t,x ! DEBUG traj
 #endif
     !
     !it=nint(t/dt) ! important to use nint!
@@ -124,7 +124,7 @@ subroutine Langevin_traj_std ! TODO check Haynes JCP 101 7811 1994 ...?
   !
 #ifdef DEBUG
   write(111,'(A)') "# t,x,v  (with mforce)"
-  write(111,'(E16.8,2E14.5)') t,x,v ! DEBUG traj
+  write(111,'(F18.8,2F18.10)') t,x,v ! DEBUG traj
 #endif
   !traj(0,1)=x
   !traj(0,2)=v
@@ -171,7 +171,7 @@ subroutine Langevin_traj_std ! TODO check Haynes JCP 101 7811 1994 ...?
 !    v=min(v,vmax)
     !
 #ifdef DEBUG
-    if (mod(i,dtmult).eq.0) write(111,'(E16.8,2E14.5)') t,x,v ! DEBUG traj
+    if (mod(i,dtmult).eq.0) write(111,'(F18.8,2F18.10)') t,x,v ! DEBUG traj
 #endif
     !
     !it=nint(t/dt) ! important to use nint!
@@ -236,7 +236,7 @@ subroutine Langevin_traj_GLEexp ! TODO TODO TODO replace with Haynes JCP 101 781
 #ifdef DEBUG
   !write(111,'(A)') "# t,x,v,force,friction,noise" ! DEBUG traj
   write(111,'(A)') "# t,x,v,p,z (with mforce)"
-  write(111,'(E16.8,5E14.5)') t,x,v,p,z ! DEBUG traj
+  write(111,'(F18.8,4F18.10)') t,x,v,p,z ! DEBUG traj
 #endif
   !
   xold=x
@@ -279,7 +279,7 @@ subroutine Langevin_traj_GLEexp ! TODO TODO TODO replace with Haynes JCP 101 781
 !    v=min(v,vmax)
     !
 #ifdef DEBUG
-    if (mod(i,dtmult).eq.0) write(111,'(E16.8,5E14.5)') t,x,p/mass,p,z ! DEBUG traj
+    if (mod(i,dtmult).eq.0) write(111,'(F18.8,4F18.10)') t,x,p/mass,p,z ! DEBUG traj
 #endif
     !
     if (mod(i,dtmult)==0) then 

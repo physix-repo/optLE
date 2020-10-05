@@ -244,17 +244,21 @@ subroutine read_input
       it=it+1
       x0(it)=colvar(j,2)
     endif
+    ! TODO can we allow points outside, skipping them?
     if (colvar(j,2).gt.xmax) call error("position larger than xmax !")
     if (colvar(j,2).lt.xmin) call error("position smaller than xmin !")
   enddo
   close(66)
   ! compute numerical velocity dq/dt
+  write(111,'(A)') "# time position numerical_velocity"
   colvar(:,3)=0.d0
   do j=2,nttot-1
     if (colvar(j+1,1).gt.colvar(j-1,1)) then ! avoid time discontinuity
       colvar(j,3) = ( colvar(j+1,2)-colvar(j-1,2) )/(2.d0*dt)
     endif 
+    write(110,'(F18.8,2F18.10)') colvar(j,1),colvar(j,2),colvar(j,3)
   enddo
+  write(*,*) "written numerical velocities in fort.111"
   ! store indeces of q,dq/dt points for propagator estimation
   ! note: when using type_err=3 (propagator-based likelihood)
   !       we use q,dq/dt skipping every dtmult, where
