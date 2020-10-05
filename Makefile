@@ -1,5 +1,6 @@
 FC=gfortran
-switch=-O3 -cpp
+# IMPORTANT: to properly activate the debug options, switch on -DDEBUG on next line
+switch=-O3 -cpp #-DDEBUG
 
 SRC_DIR=src
 BUILD_DIR=build
