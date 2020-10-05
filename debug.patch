@@ -1,0 +1,35 @@
+diff --git a/src/Langevin.f90 b/src/Langevin.f90
+index fb2c363..4d160ad 100644
+--- a/src/Langevin.f90
++++ b/src/Langevin.f90
+@@ -1,5 +1,6 @@
+ subroutine Langevin_traj_overdamped
+ !
++#define DEBUG
+   use common_var
+   !
+   implicit none
+diff --git a/src/init.f90 b/src/init.f90
+index 34bf6ed..7f03b62 100644
+--- a/src/init.f90
++++ b/src/init.f90
+@@ -1,6 +1,7 @@
+ !================================================================================
+ subroutine read_input
+ !
++#define DEBUG
+   use common_var
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! README_begin
+ !
+diff --git a/src/optimization.f90 b/src/optimization.f90
+index cf07993..7ce0c38 100644
+--- a/src/optimization.f90
++++ b/src/optimization.f90
+@@ -1,6 +1,7 @@
+ !================================================================================
+ subroutine optimize_Pmod
+ !
++#define DEBUG
+   use common_var
+   !
+   implicit none
