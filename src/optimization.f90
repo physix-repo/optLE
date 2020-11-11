@@ -209,7 +209,7 @@ subroutine optimize_Pmod
         prof_g_best  = prof_g
         prof_m_best  = prof_m
         !
-        iu=5000000+iopt
+        iu=500000000+iopt
         open(iu,status="unknown")
         write(iu,'(A,2E13.5)') "# x F F/kT gamma mass ; taug, err=",taug,err
         do i=1,ngrid
