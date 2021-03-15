@@ -37,12 +37,12 @@ available in [resources/input](./resources/input).
 The input file is the following:
 
 ```
-colvar_file	   colvar        (format: t x, multiple trajectoires appended)	
-dt        	     0.01        (time step in colvar file)
-dtmult    	     10          (time step for integration dtint = dt/dtmult)
+colvar_file       colvar        (format: t x, multiple trajectoires appended)  
+dt                  0.01        (time step in colvar file)
+dtmult              10          (time step for integration dtint = dt/dtmult)
 xmin            -3.0            (better to take xmin and xmax large)
 xmax             3.0
-xbins	          40             (used for x and v histograms)
+xbins            40             (used for x and v histograms)
 kT               5.0
 init_tau         400.
 opt_niter        500            (optimization steps, 0 = just print one traj and stop)
@@ -53,7 +53,7 @@ fit_F              1
 fit_gamma          1
 fit_tau            0
 fit_mass           0
-type_error         1            (1 = -logLikelihood, 2 = RMSD)
+type_error         1            (1 = -logLik(KL), 2 = RMSD, 3 = -logLik(analyt.propagator (-3=test&exit)), 4 = -logLik(num.propagator))
 pos_dep_gamma      1            (0 = fixed gamma, 1 = position-dependent gamma)
 pos_dep_mass       1            (0 = fixed mass , 1 = position-dependent mass )
 max_Gaussian_h   10.  5.   1.   (max height of Gaussians added to profiles F,g,m)
