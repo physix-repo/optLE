@@ -5,7 +5,7 @@ switch=-O3 -cpp #-DDEBUG
 SRC_DIR=src
 BUILD_DIR=build
 BIN_DIR=bin
-objects = common_var.o main.o init.o interpolate.o optimization.o langevin.o tools.o friction_daldrop.o
+objects = common_var.o main.o init.o interpolate.o optimization.o langevin.o kolmogorovsmirnov.o  tools.o friction_daldrop.o
 
 # standard version
 optle: builddirs $(objects)
@@ -24,6 +24,8 @@ optimization.o: common_var.mod $(SRC_DIR)/optimization.f90
 	$(FC) -o $(BUILD_DIR)/optimization.o -c $(switch) $(SRC_DIR)/optimization.f90
 langevin.o: common_var.mod $(SRC_DIR)/Langevin.f90
 	$(FC) -o $(BUILD_DIR)/langevin.o -c $(switch) $(SRC_DIR)/Langevin.f90
+kolmogorovsmirnov.o: common_var.mod $(SRC_DIR)/KolmogorovSmirnov.f90
+	$(FC) -o $(BUILD_DIR)/kolmogorovsmirnov.o -c $(switch) $(SRC_DIR)/KolmogorovSmirnov.f90
 tools.o: common_var.mod $(SRC_DIR)/tools.f90
 	$(FC) -o $(BUILD_DIR)/tools.o -c $(switch) $(SRC_DIR)/tools.f90
 friction_daldrop.o: common_var.mod $(SRC_DIR)/friction_daldrop.f90

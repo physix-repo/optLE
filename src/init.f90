@@ -25,7 +25,7 @@ subroutine read_input
 !fit_gamma          1
 !fit_tau            0
 !fit_mass           0
-!type_error         1            (1 = -logLik(KL), 2 = RMSD, 3 = -logLik(overdamped propagator))
+!type_error         1            (1 = -logLik(KL), 2 = RMSD, 3 = -logLik(analyt.propagator (-3=test&exit)), 4 = -logLik(num.propagator))
 !pos_dep_gamma      1            (0 = fixed gamma, 1 = position-dependent gamma)
 !pos_dep_mass       1            (0 = fixed mass , 1 = position-dependent mass )
 !max_Gaussian_h   10.  5.   1.   (max height of Gaussians added to profiles F,g,m)
@@ -180,18 +180,24 @@ subroutine read_input
   if (fit_taug.ne.0.and.fit_taug.ne.1) call error("fit_tau   must be 0 or 1")
   if (fit_mass.ne.0.and.fit_mass.ne.1) call error("fit_mass  must be 0 or 1")
   !
+  test_propagator=.false.
   write(*,*) ""
   if (type_error.eq.1) then
     write(*,*) "type_error = 1: using -log(Likelihood) (equiv. to Kullback-Leibler divergence)"
   elseif (type_error.eq.2) then
     write(*,*) "type_error = 2: using RMSD of prob. distributions"
-  elseif (type_error.eq.3) then
-    write(*,*) "type_error = 3: using -log(Likelihood) (from short-time propagator)"
+  elseif (type_error.eq.3.or.type_error.eq.-3) then
+    write(*,*) "type_error = 3: using -log(Likelihood) (from analytical propagator)"
+    if (type_error.eq.-3) then
+      test_propagator=.true.
+      type_error=3
+      write(*,*) "WARNING: testing the analytical propagator against the numerical one and exiting !"
+    endif
     if (type_Langevin.gt.1) then
       call error("this error is implemented only for overdamped and standard Langevin dynamics")
     endif
   else  
-    call error("only type_error = 1 2 3 are implemented")
+    call error("only type_error = 1 2 3 4 are implemented")
   endif
   !
   write(*,*) ""

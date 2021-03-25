@@ -9,7 +9,7 @@ module common_var
   integer :: type_Langevin, ratio_Langevin_MD, ntraj_Langevin, ntraj_MD
   integer :: fit_F, fit_gamm, fit_taug, fit_mass, fix_mass0
   integer :: opt_niter, type_error, pos_dep_gamma,pos_dep_mass, use_velocity
-  logical :: print_traj
+  logical :: print_traj,test_propagator
   double precision, allocatable :: colvar(:,:), x0(:)
   double precision, allocatable :: Pref(:,:,:), Pmod(:,:,:)
   double precision :: mass0,gamm,taug
