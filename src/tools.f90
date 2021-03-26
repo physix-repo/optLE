@@ -95,7 +95,7 @@ subroutine compute_error(error,type_err,iprintGauss)
     !
     if (iprintGauss.eq.1) then
       ! here we write deviations from model: it should be a normalized Gaussian
-      open(123,file="Gauss",status="unknown") 
+      open(123,file="colvar_disp_scaled_from_prop",status="unknown") 
     endif
     !
     if (type_Langevin.eq.0) then
@@ -107,7 +107,7 @@ subroutine compute_error(error,type_err,iprintGauss)
         open(60,file="err_prop",status="unknown")
         write(60,'(A)') "# propagator error: avg scaled Likelihood and Kolmogorov-Smirnov (dist, prob)"
         write(60,'(A)') "# note: for the first, the ideal value is 0.5*[log(2pi)+1] = 1.419"
-        open(61,file="err_prop_Gaussian",status="unknown")
+        open(61,file="shooting_disp_scaled_from_prop",status="unknown")
         write(61,'(A)') "# error of the propagator: scaled displacements from Langevin shootings"
         write(61,'(A)') "# ideally, they should be distributed as a Gaussian N(0,1)"
         err_prop_L  = 0.D0
@@ -475,10 +475,10 @@ subroutine init_random_seed()
   call random_seed(put=seed)
   !
   !!!!!!!!!!!!! test Gaussian random numbers:
-  do i=1,10000
-    call noise(G)
-    write(222,'(F12.6)') G
-  enddo
+  !do i=1,10000
+   ! call noise(G)
+    !write(222,'(F12.6)') G
+  !enddo
   !
 end subroutine init_random_seed
 !======================================================================
