@@ -64,9 +64,9 @@ subroutine compute_error(error,type_err,iprintGauss)
   double precision :: Mq,Mqq,Mv,Mvv,Mqv,detM
   double precision :: Lqq,Lqv,Lvv
   double precision :: minuslogL,err_prop_L,err_prop_KS,dKS,pKS,p_traj
-  integer, parameter :: ntraj=100 ! TODO: ask in input
+  !integer, parameter :: ntraj
   integer :: itraj
-  double precision :: qlast(ntraj),qtmp,etmp,erftmp
+  double precision :: qlast(ntraj_prop),qtmp,etmp,erftmp
   double precision, parameter :: pi=3.14159265359d0, pi2=pi*pi, sqrt2=sqrt(2.)
   !
   if (type_err.eq.1) then
@@ -138,18 +138,18 @@ subroutine compute_error(error,type_err,iprintGauss)
             error = error + minuslogL
             nave  = nave+1
             if (test_propagator) then 
-               call prop_via_traj(q,q2,dt*dtmult,ntraj,qlast)
+               call prop_via_traj(q,q2,dt*dtmult,qlast)
                ! compute likelihood of propagator given Langevin shootings on scaled data:
                qlast(:) = (qlast(:)-q-Mq)/sqrt(Mqq)
                etmp = 0.5d0*log(2.d0*pi) + &
-                sum( qlast(1:ntraj)**2 ) / (ntraj*2.d0) 
+                sum( qlast(1:ntraj_prop)**2 ) / (ntraj_prop*2.d0) 
                write(60,'(E14.6,$)') etmp
                err_prop_L = err_prop_L + etmp
                ! compare CDF of qlast with Gaussian CDF:
-               call quicksort(qlast,1,ntraj)
+               call quicksort(qlast,1,ntraj_prop)
                write(61,'(F6.3)') qlast(:)
                ! compute Kolmogorov-Smirnov statistic for normal distribution:
-               call KSone_normal(qlast,ntraj,dKS,pKS)
+               call KSone_normal(qlast,ntraj_prop,dKS,pKS)
                write(60,'(2F11.6)') dKS,pKS
                err_prop_KS = err_prop_KS + dKS
             endif
@@ -197,18 +197,18 @@ subroutine compute_error(error,type_err,iprintGauss)
             error = error + minuslogL
             nave  = nave+1
             if (test_propagator) then 
-               call prop_via_traj(q,q2,dt*dtmult,ntraj,qlast)
+               call prop_via_traj(q,q2,dt*dtmult,qlast)
                ! compute likelihood of propagator given Langevin shootings on scaled data:
                qlast(:) = (qlast(:)-q-Mq)/sqrt(Mqq)
                etmp = 0.5d0*log(2.d0*pi) + &
-                sum( qlast(1:ntraj)**2 ) / (ntraj*2.d0) 
+                sum( qlast(1:ntraj_prop)**2 ) / (ntraj_prop*2.d0) 
                write(60,'(E14.6,$)') etmp
                err_prop_L = err_prop_L + etmp
                ! compare CDF of qlast with Gaussian CDF:
-               call quicksort(qlast,1,ntraj)
+               call quicksort(qlast,1,ntraj_prop)
                write(61,'(F6.3)') qlast(:)
                ! compute Kolmogorov-Smirnov statistic for normal distribution:
-               call KSone_normal(qlast,ntraj,dKS,pKS)
+               call KSone_normal(qlast,ntraj_prop,dKS,pKS)
                write(60,'(2F11.6)') dKS,pKS
                err_prop_KS = err_prop_KS + dKS
             endif
@@ -324,13 +324,13 @@ subroutine compute_error(error,type_err,iprintGauss)
 !
 end subroutine compute_error
 !======================================================================
-subroutine prop_via_traj(q1,q2,dt_data,ntraj,qlast)
+subroutine prop_via_traj(q1,q2,dt_data,qlast)
 !
   use common_var
   !
-  double precision :: q1,q2,dt_data,p_traj,qlast(ntraj)
-  double precision :: dtint
-  integer :: ntraj ! important parameter: number of shootings
+  double precision :: q1,q2,dt_data,p_traj,qlast(ntraj_prop)
+  !double precision :: dtint
+  !integer :: ntraj_prop ! important parameter: number of shootings
   integer :: i,it,igrid1,igrid2,nstep
   double precision, allocatable :: G_vec(:)
   double precision :: q,G,noisefac,mynoise,tmp
@@ -348,10 +348,10 @@ subroutine prop_via_traj(q1,q2,dt_data,ntraj,qlast)
   !   q' = q + ( (D/kT)*F + dD/dq )*dt + sqrt(2*D*dt)*G
   ! with G a Gaussian random number with <G>=0, <G^2>=1
   !----------------------------------------------------------------------------------
-  dtint=dt/100. ! TODO arbitrary: rather, give in input and check it is good on-the-fly!
-  nstep = dt_data/dtint
+  !dtint=dt/100. ! TODO arbitrary: rather, give in input and check it is good on-the-fly!
+  nstep = dt_data/dtint_prop
   D_over_kT(:)   = 1.d0/(prof_m(:)*prof_g(:))
-  sqrt_2_D_over_dt(:) = sqrt(2.d0*kT*D_over_kT(:)/dtint)
+  sqrt_2_D_over_dt(:) = sqrt(2.d0*kT*D_over_kT(:)/dtint_prop)
   do igrid1=2,ngrid-1
     dD(igrid1)=kT*(D_over_kT(igrid1+1)-D_over_kT(igrid1-1))/dxgrid2
   enddo
@@ -359,7 +359,7 @@ subroutine prop_via_traj(q1,q2,dt_data,ntraj,qlast)
   dD(ngrid) = dD(ngrid-1)
   allocate(G_vec(nstep+1))
   !
-  do it = 1,ntraj ! loop on ntraj
+  do it = 1,ntraj_prop ! loop on ntraj_prop
     call noise_vector(G_vec,nstep) 
     q = q1
     !
@@ -373,23 +373,23 @@ subroutine prop_via_traj(q1,q2,dt_data,ntraj,qlast)
       G = G_vec(i)
       tmp = 0.5d0*dD(ig)
       mynoise  = ( sqrt_2_D_over_dt(ig) + tmp*G )*G                  ! Milstein 
-      q = q + ( D_over_kT(ig)*prof_force(ig) + tmp + mynoise )*dtint ! Milstein
+      q = q + ( D_over_kT(ig)*prof_force(ig) + tmp + mynoise )*dtint_prop ! Milstein
     enddo ! main loop
     qlast(it) = q
-  enddo ! loop on ntraj
+  enddo ! loop on ntraj_prop
 !!!  !
 !!!  ! kernel density estimation of the transition probability q1->q2
 !!!  ! I use Silverman's rule to guess a good sigma of the Gaussian kernels
 !!!  ! (see wikipedia, https://archive.org/details/densityestimatio00silv_0/page/45)
 !!!  ! which is suitable for prob in the form of a Gaussian (maybe a strong approx?)
 !!!  !
-!!!  kde_sigma = 1.06d0*dsqrt( sum(qlast(:)**2)/ntraj - (sum(qlast(:))/ntraj)**2 )
-!!!  kde_sigma = kde_sigma / (ntraj**(0.2d0))
+!!!  kde_sigma = 1.06d0*dsqrt( sum(qlast(:)**2)/ntraj_prop - (sum(qlast(:))/ntraj_prop)**2 )
+!!!  kde_sigma = kde_sigma / (ntraj_prop**(0.2d0))
 !!!  p_traj = 0.d0
-!!!  do it = 1,ntraj
+!!!  do it = 1,ntraj_prop
 !!!    p_traj = p_traj + dexp( -0.5d0*( (q2-qlast(it))/kde_sigma )**2 )
 !!!  enddo
-!!!  p_traj = p_traj / ( ntraj*dsqrt(2.d0*pi)*kde_sigma )
+!!!  p_traj = p_traj / ( ntraj_prop*dsqrt(2.d0*pi)*kde_sigma )
 !
 end subroutine prop_via_traj
 !======================================================================
@@ -403,7 +403,7 @@ subroutine compute_typical_min_error(minerr1,minerr2)
   ! store the correct Pref (from MD data)
   Ptmp=Pref
   ! compute 1st Pmod (a particular realization depending on random sequence)
-  call compute_Pmod ! run ntraj_Langevin simulations and compute Pmod
+  call compute_Pmod ! run ntraj_prop_Langevin simulations and compute Pmod
   ! pretend Pref is Pmod
   Pref=Pmod
   ! compute 2nd Pmod (a particular realization depending on random sequence)

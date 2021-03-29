@@ -138,6 +138,14 @@ subroutine read_input
   if (trim(keyword)/="use_velocity") call error("input: expected keyword use_velocity")
   write(*,*) keyword,use_velocity
   !
+  read(55,*) keyword,dtint_prop
+  if (trim(keyword)/="dtint_prop") call error("input: expected keyword dtint_prop")
+  write(*,*) keyword,dtint_prop
+  !
+  read(55,*) keyword,ntraj_prop
+  if (trim(keyword)/="ntraj_prop") call error("input: expected keyword ntraj_prop")
+  write(*,*) keyword,ntraj_prop
+  !
   close(55)
   !
   write(*,*) ""

@@ -1,23 +1,25 @@
-colvar_file	   colvar               (format: t x, multiple trajectoires appended)	
-dt        	     0.01           (time step in colvar file)
-dtmult    	     10             (time step for integration dtint = dt/dtmult)
-xmin            -1.8            (better to take xmin and xmax large)
-xmax             1.8
-xbins	          40            (used for x and v histograms)
+colvar_file       colvar        (format: t x, multiple trajectoires appended)  
+dt                  0.01        (time step in colvar file)
+dtmult              1          (time step for integration dtint = dt/dtmult)
+xmin            -1.2960923905            (better to take xmin and xmax large)
+xmax             1.3079306507
+xbins            40             (used for x and v histograms)
 kT               1.0
 init_tau         400.
-opt_niter        50            (optimization steps, 0 = just print one traj and stop)
-opt_temp         1e-4 1e-5      (absolute error used as annealing T, initial and final)
+opt_niter        100            (optimization steps, 0 = just print one traj and stop)
+opt_temp         1e-4 1e-5 0.05    (annealing T: initial, final, target acceptance)
 type_Langevin      0            (0 = overdamped, 1 = std, 2 = GLE)
 ratio_Langevin_MD  10           (ratio between number of Langevin traj and MD traj)
 fit_F              1
 fit_gamma          1
 fit_tau            0
 fit_mass           0
-type_error         2            (1 = -logLikelihood, 2 = RMSD)
+type_error         -3            (1 = -logLik(KL), 2 = RMSD, 3 = -logLik(analyt.propagator (-3=test&exit)), 4 = -logLik(num.propagator))
 pos_dep_gamma      1            (0 = fixed gamma, 1 = position-dependent gamma)
-pos_dep_mass       1            (0 = fixed mass , 1 = position-dependent mass )
+pos_dep_mass       0            (0 = fixed mass , 1 = position-dependent mass )
 max_Gaussian_h   10.  5.   1.   (max height of Gaussians added to profiles F,g,m)
-max_Gaussian_w   0.05 0.05 0.05 (max width of Gaussians added to profiles F,g,m)
+max_Gaussian_w   0.05 0.05 0.05 (max width of Gaussians added, units of (xmax-xmin))
 fix_mass0          0            (keep fixed the value of the mass at the TS)
 use_velocity       1            (0 = optimize P(x,t), 1 = optimize P(x,v,t)
+dtint_prop         0.001        (time step for integration in propagator test)
+ntraj_prop         100          (number of trajs to test the propagator) 
