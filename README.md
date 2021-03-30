@@ -58,8 +58,10 @@ pos_dep_gamma      1            (0 = fixed gamma, 1 = position-dependent gamma)
 pos_dep_mass       1            (0 = fixed mass , 1 = position-dependent mass )
 max_Gaussian_h   10.  5.   1.   (max height of Gaussians added to profiles F,g,m)
 max_Gaussian_w   0.05 0.05 0.05 (max width of Gaussians added, units of (xmax-xmin))
-fix_mass0          1            (keep fixed the value of the mass at the TS)
+fix_mass0          0            (keep fixed the value of the mass at the TS)
 use_velocity       1            (0 = optimize P(x,t), 1 = optimize P(x,v,t)
+dtint_prop         0.001        (time step for integration in propagator test)
+ntraj_prop         100          (number of trajs to test the propagator) 
 ```
 
 ### _colvar_ file
