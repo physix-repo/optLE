@@ -147,7 +147,7 @@ subroutine compute_error(error,type_err,iprintGauss)
                err_prop_L = err_prop_L + etmp
                ! compare CDF of qlast with Gaussian CDF:
                call quicksort(qlast,1,ntraj_prop)
-               write(61,'(F6.3)') qlast(:)
+               write(61,'(F11.6)') qlast(:)
                ! compute Kolmogorov-Smirnov statistic for normal distribution:
                call KSone_normal(qlast,ntraj_prop,dKS,pKS)
                write(60,'(2F11.6)') dKS,pKS
@@ -206,7 +206,7 @@ subroutine compute_error(error,type_err,iprintGauss)
                err_prop_L = err_prop_L + etmp
                ! compare CDF of qlast with Gaussian CDF:
                call quicksort(qlast,1,ntraj_prop)
-               write(61,'(F6.3)') qlast(:)
+               write(61,'(F11.6)') qlast(:)
                ! compute Kolmogorov-Smirnov statistic for normal distribution:
                call KSone_normal(qlast,ntraj_prop,dKS,pKS)
                write(60,'(2F11.6)') dKS,pKS
