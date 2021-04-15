@@ -4,11 +4,11 @@ subroutine optimize_Pmod
   use common_var
   !
   implicit none
-  integer :: i,j,iopt,ix,iv,it,imove,nacc,nacc_last,iu,ifit,jfit
+  integer :: i,iopt,ix,iv,it,nacc,nacc_last,iu,ifit,jfit
   double precision :: err1,err2,minerr1,minerr2, opt_temp 
-  double precision :: err,err_old,err_best,gamm_old,gamm_best
-  double precision :: mass_old,mass_best,taug_old,taug_best
-  double precision :: r,rr,rrr,x,deltae
+  double precision :: err,err_old,err_best
+  double precision :: taug_old,taug_best
+  double precision :: r,rr,x,deltae
   double precision :: scale_t,scale_f,scale_g,scale_m
   double precision :: rand_taug, rand_global, rand_global_scaleall
   double precision :: prob_taug, prob_global, prob_global_scaleall
@@ -325,7 +325,7 @@ subroutine compute_Pmod
   use common_var
   !
   implicit none
-  integer :: itraj_MD,imult,ix,it
+  integer :: itraj_MD,imult !ix,it
   !
   Pmod=0.D0
   !

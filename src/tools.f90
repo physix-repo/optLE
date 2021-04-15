@@ -161,6 +161,7 @@ subroutine compute_error(error,type_err,iprintGauss)
            err_prop_L/dble(nave),err_prop_KS/dble(nave)
           close(60)
           close(61)
+          write(*,*) "END OF THE TEST"
           stop
         endif
       endif
@@ -224,6 +225,7 @@ subroutine compute_error(error,type_err,iprintGauss)
            err_prop_L/dble(nave),err_prop_KS/dble(nave)
           close(60)
           close(61)
+          write(*,*) "END OF THE TEST"
           stop
         endif
       endif

@@ -3,9 +3,9 @@ subroutine Langevin_traj_overdamped
   use common_var
   !
   implicit none
-  integer :: ix,iv,it,i,igrid1,igrid2,nstep
-  double precision :: dtint,x,t,v,G,force,mforce,xold,xnew,vnew, mass
-  double precision :: noisefac,mynoise, tmp 
+  integer :: ix,it,i,igrid1,nstep
+  double precision :: dtint,x,t,v,G,force,xold,xnew,vnew
+  double precision :: mynoise
   double precision :: D_over_kT(ngrid),sqrt_2_D_over_dt(ngrid),dD_over_dx(ngrid)
   !---------------------------------------------------------------------------------- 
   ! D = kT / mg  (gamma is an inverse time)
@@ -320,7 +320,7 @@ if (iset.eq.0) then
   call random_number(r)
   v2=2.*r-1.
   rsq=v1**2+v2**2
-  if(rsq.ge.1..or.rsq.eq.0.)goto 1
+  if(rsq.ge.1..or.rsq.lt.1.d-10)goto 1
   fac=sqrt(-2.*log(rsq)/rsq)
   gset=v1*fac
   dw=v2*fac

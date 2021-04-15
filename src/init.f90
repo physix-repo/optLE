@@ -238,7 +238,7 @@ subroutine read_input
     i=i+1
     if (line(1:1).ne."#") then
       read (line(:),*,err=101) tmp1,tmp2
-      if (tmp1.eq.0) ntraj_MD=ntraj_MD+1
+      if (dabs(tmp1).lt.1.d-7) ntraj_MD=ntraj_MD+1
       if (tmp1.gt.tmax) tmax=tmp1
     endif
   enddo
@@ -254,9 +254,11 @@ subroutine read_input
   it=0
   do j=1,nttot
     read(66,*) colvar(j,1),colvar(j,2)
-    if (colvar(j,1).eq.0) then ! fill x0 with points x(t=0)
+    if (colvar(j,1).lt.dt/10.) then ! fill x0 with points x(t=0)
+      ! note: the syntax in if() here above is a complicated way of testing if t=0 ...
       it=it+1
       x0(it)=colvar(j,2)
+!      write(*,*) "x0=",x0(it) ! DEBUG
     endif
     ! TODO can we allow points outside, skipping them?
     if (colvar(j,2).gt.xmax) call error("position larger than xmax !")
@@ -522,8 +524,8 @@ subroutine init_mass
   use common_var
   !
   implicit none
-  double precision :: v,vv,vv1,vv2,xx
-  integer :: i,j,it,nave,nave1,nave2
+  double precision :: v,vv,vv1,vv2
+  integer :: i,it,nave,nave1,nave2
   !
   write(*,*) ""
   write(*,*) "----------------------- estimating mass -------------------------"
@@ -531,7 +533,7 @@ subroutine init_mass
   vv=0.D0
   nave=0
   do i=1,nttot
-    if (colvar(i,1).eq.0) then
+    if (dabs(colvar(i,1)-0).lt.1.d-10) then
       nave=nave+1
       vv=vv+((colvar(i+1,2)-colvar(i,2))/dt)**2
     endif
@@ -546,14 +548,14 @@ subroutine init_mass
   write(*,*) "mass0 = kT/<v^2> =",mass0
   !
   write(*,*) ""
-  write(*,*) "*** testing velocities at the minima bottom (last 10% of trajectories)"
+  write(*,*) "*** testing velocities at the minima bottom (last 30% of each traj.)"
   vv1=0.D0
   vv2=0.D0
   nave1=0
   nave2=0
   do i=1,nttot-1
     it=nint(dble(nt)*colvar(i,1)/tmax)
-    if (colvar(i,1)>tmax*0.9d0.and.it<nt-1) then
+    if (colvar(i,1)>tmax*0.7d0.and.it<nt-1) then
     !test: if (colvar(i,1)>tmax*0.1d0.and.colvar(i,1)<tmax*0.2d0.and.it<nt) then
       v=((colvar(i+1,2)-colvar(i,2))/dt)
       if (colvar(i,2)<x0(1)) then
@@ -565,9 +567,9 @@ subroutine init_mass
       endif
     endif
   enddo
-  vv1=vv1/dble(nave1)
-  vv2=vv2/dble(nave2)
   write(*,*) "number of velocities =",nave1,nave2
+  if (nave1>0) vv1=vv1/dble(nave1)
+  if (nave2>0) vv2=vv2/dble(nave2)
   write(*,*) "<v^2> =",vv1,vv2
   write(*,*) "approx. masses = kT/<v^2> =",kT/vv1,kT/vv2 
   write(*,*) "WARNING: if trajectories are not equilibrated to the T given in input, these 2 masses are meaningless"
@@ -591,10 +593,10 @@ subroutine init_potential
   use common_var
   !
   implicit none
-  double precision :: bottom1,bottom2,tmp
-  integer :: nave1,nave2,i,j,ibest,itype
-  double precision :: x,xx,dbest,control_p(2,5)
-  character :: line*80
+  !double precision :: bottom1,bottom2,tmp
+  !integer :: nave1,nave2,i,j,ibest,itype
+  !double precision :: x,xx,dbest,control_p(2,5)
+  !character :: line*80
   !
   !if (restart.ne.1) then
   !  !
@@ -649,8 +651,8 @@ subroutine init_friction
   use common_var
   !
   implicit none
-  integer :: i,j,it
-  double precision :: nave(2),ave(2),var(2),tau(2),Dtmp(2),told,xx
+  integer :: i,j,it=0
+  double precision :: nave(2),ave(2),var(2),tau(2),Dtmp(2),told
   double precision, allocatable :: corr(:,:)
   !
   write(*,*) ""
