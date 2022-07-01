@@ -66,9 +66,10 @@ subroutine compute_error(error,type_err,iprintGauss)
   double precision :: minuslogL,err_prop_L,err_prop_KS,dKS,pKS,p_traj
   !integer, parameter :: ntraj
   integer :: itraj
-  double precision :: qlast(ntraj_prop),qtmp,etmp,erftmp
+  double precision :: qlast(ntraj_prop),qtmp,etmp,erftmp,obs_noise
   double precision, parameter :: pi=3.14159265359d0, pi2=pi*pi, sqrt2=sqrt(2.)
   !
+  if (iopt.eq.opt_niter) write(654,'(a)') '# time observed_noise'
   if (type_err.eq.1) then
     !
     ! Kullback-Leibler divergence: err=sum(-Pref*log(Pmod/Pref))
@@ -187,7 +188,7 @@ subroutine compute_error(error,type_err,iprintGauss)
         nave=0
         do i=1,n_tprop
           do j=ibeg_tprop(i),iend_tprop(i)-dtmult,dtmult
-             q    = colvar(j,2)
+             q    = colvar(j,2) 
             q2    = colvar(j+dtmult,2)
             dq    = q2-q
             ig    = int((q-xmin)/dxgrid)+1 ! pre-point
@@ -197,6 +198,11 @@ subroutine compute_error(error,type_err,iprintGauss)
             minuslogL = 0.5d0*log(2.d0*pi*Mqq) + qq*qq / (2.d0*Mqq)
             error = error + minuslogL
             nave  = nave+1
+            if (iopt.eq.opt_niter) then
+              ! note: a=-beta*D*F'+D'
+              obs_noise = (dq-a(ig)*ddt)/dsqrt(2.d0*D(ig)*ddt)
+              write(654,'(f12.6,f12.6)') colvar(j,1),obs_noise
+            endif
             if (test_propagator) then 
                call prop_via_traj(q,q2,dt*dtmult,qlast)
                ! compute likelihood of propagator given Langevin shootings on scaled data:
@@ -208,6 +214,8 @@ subroutine compute_error(error,type_err,iprintGauss)
                ! compare CDF of qlast with Gaussian CDF:
                call quicksort(qlast,1,ntraj_prop)
                write(61,'(F11.6)') qlast(:)
+               !KP: write test rev1
+               write(33,'(1I5,6F11.6)') ig,q,q2,dq,a(ig),Mq,Mqq 
                ! compute Kolmogorov-Smirnov statistic for normal distribution:
                call KSone_normal(qlast,ntraj_prop,dKS,pKS)
                write(60,'(2F11.6)') dKS,pKS

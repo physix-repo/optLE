@@ -4,7 +4,7 @@ subroutine optimize_Pmod
   use common_var
   !
   implicit none
-  integer :: i,iopt,ix,iv,it,nacc,nacc_last,iu,ifit,jfit
+  integer :: i,ix,iv,it,nacc,nacc_last,iu,ifit,jfit
   double precision :: err1,err2,minerr1,minerr2, opt_temp 
   double precision :: err,err_old,err_best
   double precision :: taug_old,taug_best
