@@ -1,6 +1,8 @@
-# Langevin Equation Optimization
+# Free Energy Landscapes, Diffusion Coefficients, and Kinetic Rates from Transition Paths
 
-This program optimizes the parameters of a Langevin equation to fit trajectories
+**Karen Palacio-Rodriguez and Fabio Pietrucci. _J. Chem. Theory Comput._ (2022). DOI: 10.1021/acs.jctc.2c00324**
+
+This program optimizes the parameters of an overdamped Langevin equation to fit trajectories
 from molecular dynamics.
 
 ## Prerequisites
