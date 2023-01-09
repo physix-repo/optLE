@@ -245,12 +245,12 @@ subroutine compute_error(error,type_err,iprintGauss)
       !
       D(:)=prof_g(:)*kT/prof_m(:)
       do ig=2,ngrid-1
-        dD(ig)=( D(ig+1)-D(ig+1) )/dxgrid2
+        dD(ig)=( D(ig+1)-D(ig-1) )/dxgrid2
       enddo
       dD(1)    =dD(2)
       dD(ngrid)=dD(ngrid-1)
       do ig=2,ngrid-1
-        ddD(ig)=( dD(ig+1)-dD(ig+1) )/dxgrid2
+        ddD(ig)=( dD(ig+1)-dD(ig-1) )/dxgrid2
       enddo
       ddD(1)    =ddD(2)
       ddD(ngrid)=ddD(ngrid-1)
