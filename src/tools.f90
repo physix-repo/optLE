@@ -50,8 +50,9 @@ subroutine compute_error(error,type_err,iprintGauss)
   use common_var
   !
   implicit none
-  integer :: ix,iv,it,i,j,ig,nave,type_err,iprintGauss, prop_order
-  double precision :: error,eps,newnorm
+  integer :: ix,iv,it,i,j,ig,nave,type_err,iprintGauss, prop_order,gloop
+  double precision :: error,eps,newnorm,sumDet,sumqq,sumqv,sumvv,qqdev,qvdev,vvdev
+  double precision :: meanv2v2,meanv2v1,meanv2q2,meanv2q1,meanv1q2
   double precision :: dq,ddq,diff(ngrid),delta
   double precision :: a(ngrid),da(ngrid),dda(ngrid)       ! drift       and derivatives
   double precision :: D(ngrid),dD(ngrid),ddD(ngrid)       ! diff.coeff. and derivatives
@@ -59,7 +60,7 @@ subroutine compute_error(error,type_err,iprintGauss)
   double precision :: b,db,ddb                            ! drift       and derivatives
   double precision :: phi(ngrid),dphi(ngrid),ddphi(ngrid) ! force/m     and derivatives
   double precision :: gam(ngrid),dgam(ngrid),ddgam(ngrid) ! gamma       and derivatives
-  double precision :: q,v,v1,v2,q3,q2,q1,q0,f1,g1,sigma2,tau 
+  double precision :: q,v,v1,v2,q3,q2,q1,q0,f1,g1,sigma2,tau,gCorrection1,gCorrection2
   double precision :: g,dg,ddt,ddt2,ddt3,tmp, qq,vv
   double precision :: Mq,Mqq,Mv,Mvv,Mqv,detM
   double precision :: Lqq,Lqv,Lvv
@@ -279,55 +280,119 @@ subroutine compute_error(error,type_err,iprintGauss)
       ddgam(1)    =ddgam(2)
       ddgam(ngrid)=ddgam(ngrid-1)
       !
-      error=0.d0
-      nave=0
-      do i=1,n_tprop
-        do j=ibeg_tprop(i),iend_tprop(i)-dtmult,dtmult
-          q      = colvar(j,2)
-          q2     = colvar(j+dtmult,2)
-          v      = colvar(j,3)
-          v2     = colvar(j+dtmult,3)
-          ig     = int((q-xmin)/dxgrid)+1
-          b      =   phi(ig)  -gam(ig)*v
-          db     =  dphi(ig) -dgam(ig)*v
-          ddb    = ddphi(ig)-ddgam(ig)*v
-          g      = gam(ig)
-          dg     = dgam(ig)
-          !
-          tmp = (db*v-b*g)
-          Mq  = q + v*ddt + b*ddt2/2.d0 + tmp*ddt3/6.d0
-          Mqq = 2.d0*D(ig)*ddt3/3.d0
-          Mv  = v + b*ddt + tmp*ddt2/2.d0 &
-              + ((ddb*v-db*g-2.d0*b*dg)*v+b*db+b*g*g-2.d0*D(ig)*dg)*ddt3/6.d0
-          Mvv = 2.d0*D(ig)*ddt + (dD(ig)*v-2.d0*D(ig)*g)*ddt2 &
-              + ((ddD(ig)*v-2.d0*dD(ig)*g-4.d0*D(ig)*dg)*v+dD(ig)*b+2.d0*D(ig)*(db+2.d0*g*g))*ddt3/3.d0
-          Mqv = D(ig)*ddt2 + (dD(ig)*v-3.d0*D(ig)*g)*ddt3/3.d0
-          detM = Mqq*Mvv-Mqv*Mqv 
-          !
-          qq = (q2-Mq)
-          vv = (v2-Mv)
-          minuslogL = 0.5d0*log(4.d0*pi2*detM) &
-                + ( 0.5d0*Mvv*qq*qq + 0.5d0*Mqq*vv*vv - Mqv*qq*vv )/detM
-          error = error + minuslogL
-          nave  = nave+1
-          !
-          if (iprintGauss.eq.1) then
-            ! we need Cholesky decomposition to get vector 
-            !  of Gaussian numbers with zero mean and unit variance:
-            Lqq = dsqrt(Mvv)
-            Lqv = -Mqv/Lqq
-            Lvv = dsqrt(Mqq-Mqv*Mqv/Mvv)
-            write(123,'(2f9.5)') (Lqq*qq+Lqv*vv)/dsqrt(detM), Lqv*vv/dsqrt(detM)
-          endif
+      do gloop =1, 200
+        error=0.d0
+        sumDet=0.d0
+        sumqq=0.d0
+        sumqv=0.d0
+        sumvv=0.d0
+        qqdev=0.d0
+        qvdev=0.d0
+        vvdev=0.d0
+       
+        nave=0
+        open(89,file="CorrectionV",status="unknown")
+        open(93,file="LogLUCorrwithParts",status="unknown")
+        open(94,file="LogLUDev",status="unknown")
+        do i=1,n_tprop
+          do j=ibeg_tprop(i),iend_tprop(i)-dtmult,dtmult
+            q      = colvar(j,2)
+            q2     = colvar(j+dtmult,2)
+            v      = colvar(j,3)
+            v2     = colvar(j+dtmult,3)
+            ig     = int((q-xmin)/dxgrid)+1
+            b      =   phi(ig)  -gam(ig)*v
+            db     =  dphi(ig) -dgam(ig)*v
+            ddb    = ddphi(ig)-ddgam(ig)*v
+            g      = gam(ig)
+            dg     = dgam(ig)
+
+            tmp = (db*v-b*g)
+
+
+            g = gloop/100.d0
+            dg = 0.d0
+            D(ig) = gloop/100.d0
+            dD(ig) = 0.d0
+            b = -g*v
+            tmp = (-b*g)
+            ! call noise(gCorrection1)
+            ! call noise(gCorrection2)
+            
+            
+            ! v      = colvar(j,3) + dsqrt(2.d0*D(ig)*ddt)*(1.d0/dsqrt(6.d0))*gCorrection1
+            ! v2     = colvar(j+dtmult,3) + dsqrt(2.d0*D(ig)*ddt)*((-dsqrt(6.d0)/24.d0)*gCorrection1 &
+            !        + dsqrt(1.d0/dsqrt(6.d0) - 6.d0/(24.d0*24.d0))*gCorrection2)
+
+            ! write(89,'(6f9.5)') dsqrt(2.d0*D(ig)*ddt)*(1.d0/dsqrt(6.d0))*gCorrection1, dsqrt(2.d0*D(ig)*ddt)*((-dsqrt(6.d0)/24.d0)& 
+            ! *gCorrection1 + dsqrt(1.d0/dsqrt(6.d0) - 6.d0/(24.d0*24.d0))*gCorrection2), gCorrection1, gCorrection2, v, v2
+            !
+            
+            Mq  = q + v*ddt + b*ddt2/2.d0 !+ tmp*ddt3/6.d0
+            Mqq = 2.d0*D(ig)*ddt3/3.d0
+            Mv  = v + b*ddt + tmp*ddt2/2.d0 !&
+                !+ ((ddb*v-db*g-2.d0*b*dg)*v+b*db+b*g*g-2.d0*D(ig)*dg)*ddt3/6.d0
+            Mvv = 2.d0*D(ig)*ddt + (dD(ig)*v-2.d0*D(ig)*g)*ddt2 &
+                + ((ddD(ig)*v-2.d0*dD(ig)*g-4.d0*D(ig)*dg)*v+dD(ig)*b+2.d0*D(ig)*(db+2.d0*g*g))*ddt3/3.d0
+            Mqv = D(ig)*ddt2 + (dD(ig)*v-3.d0*D(ig)*g)*ddt3/3.d0
+            detM = Mqq*Mvv-Mqv*Mqv 
+            !
+            qq = (q2-Mq)
+            vv = (v2-Mv)
+            
+            minuslogL = 0.5d0*log(4.d0*pi2*detM) &
+                  + ( 0.5d0*Mvv*qq*qq + 0.5d0*Mqq*vv*vv - Mqv*qq*vv )/detM
+            error = error + minuslogL
+            nave  = nave+1
+
+            sumDet = sumDet + 0.5d0*log(4.d0*pi2*detM)
+            sumqq = sumqq + 0.5d0*Mvv*qq*qq/detM
+            sumqv = sumqv - Mqv*qq*vv/detM
+            sumvv = sumvv + 0.5d0*Mqq*vv*vv/detM
+             
+            qqdev = (q2*q2 + q*q - 2.d0*q*q2 + q2*v*(-2.d0*ddt + g*ddt2)&
+                  +q*v*(2.d0*ddt - g*ddt2) + v*v*(ddt2 - g*ddt3 + 0.25d0*g*g*ddt2*ddt2))!
+            
+            vvdev = (v2*v2 + v2*v*(-2.d0 + 2.d0*g*ddt - g*g*ddt2) + v*v*(1.d0 - 2.d0*g*ddt&
+                  + 2.d0*g*g*ddt2 -g*g*g*ddt3 + 0.25d0*g*g*g*g*ddt2*ddt2))
+
+            qvdev = (v2*q2 - v2*q + v*q2*(-1.d0 + g*ddt - 0.5d0*g*g*ddt2) + v*q*(1.d0 - g*ddt + 0.5d0*g*g*ddt2)&
+                  + v*v2*(-ddt + 0.5d0*g*ddt2) + v*v*(ddt - 1.5d0*g*ddt2 + g*g*ddt3 - 0.25d0*g*g*g*ddt2*ddt2))
+            
+            write(*,*) vv*qq, qvdev
+
+  
+            !
+            if (iopt.eq.opt_niter) then
+              ! note: a=-beta*D*F'+D'
+              
+              obs_noise = (v2 - v - phi(ig)*ddt + gam(ig)*v*ddt)/dsqrt(2.d0*D(ig)*ddt)
+              write(654,'(f12.6,f12.6)') colvar(j,1),obs_noise
+              endif
+            if (iprintGauss.eq.1) then
+              ! we need Cholesky decomposition to get vector 
+              !  of Gaussian numbers with zero mean and unit variance:
+              Lqq = dsqrt(Mvv)
+              Lqv = -Mqv/Lqq
+              Lvv = dsqrt(Mqq-Mqv*Mqv/Mvv)
+              write(123,'(2f9.5)') (Lqq*qq+Lqv*vv)/dsqrt(detM), Lqv*vv/dsqrt(detM)
+            endif
+          enddo
         enddo
+        error = error/dble(nave)
+        write(93,'(6f12.6)') gloop/100.d0,error,sumDet/dble(nave),sumqq/dble(nave),sumqv/dble(nave),sumvv/dble(nave)
+        write(94,'(2f12.6)') gloop/100.d0, qqdev/dble(nave)
       enddo
-      error = error/dble(nave)
       !
     endif
     !
     if (iprintGauss.eq.1) then
       close(123)
     endif
+    close(89)
+    close(93)
+    close(94)
+
     !
   endif
   ! TODO: add also Kolmogorov-Smirnov statistic on P(x,t) (discarding velocities...)

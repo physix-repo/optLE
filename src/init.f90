@@ -37,7 +37,7 @@ subroutine read_input
   implicit none
   character :: keyword*20,colvar_file*40
   character :: line*100
-  double precision :: tmp1,tmp2,x
+  double precision :: tmp1,tmp2,x,lambda, gCorrection1, gCorrection2
   integer :: i,j,it
   !
   !----------------------------------------------- read input file
@@ -146,6 +146,10 @@ subroutine read_input
   if (trim(keyword)/="ntraj_prop") call error("input: expected keyword ntraj_prop")
   write(*,*) keyword,ntraj_prop
   !
+  read(55,*) keyword,lambda
+  if (trim(keyword)/="lambda") call error("input: expected keyword lambda")
+  write(*,*) keyword,lambda
+  !
   close(55)
   !
   write(*,*) ""
@@ -253,7 +257,7 @@ subroutine read_input
   allocate(colvar(nttot,3)) ! time q dq/dt
   it=0
   do j=1,nttot
-    read(66,*) colvar(j,1),colvar(j,2)
+    read(66,*) colvar(j,1),colvar(j,2)!,colvar(j,3)
     if (colvar(j,1).lt.dt/10.) then ! fill x0 with points x(t=0)
       ! note: the syntax in if() here above is a complicated way of testing if t=0 ...
       it=it+1
@@ -267,10 +271,24 @@ subroutine read_input
   close(66)
   ! compute numerical velocity dq/dt
   write(111,'(A)') "# time position numerical_velocity"
+  ! colvar(:,3)=0.d0
+  ! do j=2,nttot-1
+  !   if (colvar(j+1,1).gt.colvar(j-1,1)) then ! avoid time discontinuity
+  !     colvar(j,3) = ( colvar(j+1,2)-colvar(j-1,2) )/(2.d0*dt)
+  !   endif 
+  !   write(110,'(F18.8,2F18.10)') colvar(j,1),colvar(j,2),colvar(j,3)
+  ! enddo
+  ! do j=2,nttot-1
+  !   if (colvar(j+1,1).gt.colvar(j-2,1)) then ! avoid time discontinuity
+  !     colvar(j,3) = ( -0.25d0*colvar(j+2,2) + 1.5d0*colvar(j+1,2) - 1.25d0*colvar(j,2) )/(1.d0*dt)
+  !   endif 
+  !   write(110,'(F18.8,2F18.10)') colvar(j,1),colvar(j,2),colvar(j,3)
+  ! enddo
+
   colvar(:,3)=0.d0
   do j=2,nttot-1
     if (colvar(j+1,1).gt.colvar(j-1,1)) then ! avoid time discontinuity
-      colvar(j,3) = ( colvar(j+1,2)-colvar(j-1,2) )/(2.d0*dt)
+      colvar(j,3) = lambda*( colvar(j+1,2)-colvar(j,2) )/(1.d0*dt) + (1.d0-lambda)*( colvar(j,2)-colvar(j-1,2) )/(1.d0*dt)
     endif 
     write(110,'(F18.8,2F18.10)') colvar(j,1),colvar(j,2),colvar(j,3)
   enddo

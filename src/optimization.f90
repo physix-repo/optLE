@@ -79,6 +79,8 @@ subroutine optimize_Pmod
   !
   gaussian=.true.
   opt_temp=opt_temp1
+
+  open(99,file="LogL", status="unknown")
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   do iopt=1,opt_niter ! opt loop
     !
@@ -248,9 +250,11 @@ subroutine optimize_Pmod
         write(*,'(A,I3,A,I3,A,E11.4)') &
          "### acc.moves/100= ",nacc_last," target= ",nint(target_acc*100)," newT= ",opt_temp
         nacc_last=0
+        !write(99,'(F12.6)') err
       endif
     endif
     !
+    
     call flush()
   enddo ! opt loop
   !
@@ -314,10 +318,13 @@ subroutine optimize_Pmod
     write(*,*) "written Pmod and Pdiff"
   endif
   !
+  
   ! clean memory
   deallocate(colvar)
   deallocate(Pref,Pmod)
 !
+write(99,'(F12.6)') err_best
+close(99)
 end subroutine optimize_Pmod
 !================================================================================
 subroutine compute_Pmod
