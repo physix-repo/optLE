@@ -257,7 +257,7 @@ subroutine read_input
   allocate(colvar(nttot,4)) ! time q dq/dt
   it=0
   do j=1,nttot
-    read(66,*) colvar(j,1),colvar(j,2),colvar(j,4)
+    read(66,*) colvar(j,1),colvar(j,2)!colvar(j,4)
     if (colvar(j,1).lt.dt/10.) then ! fill x0 with points x(t=0)
       ! note: the syntax in if() here above is a complicated way of testing if t=0 ...
       it=it+1

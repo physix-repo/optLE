@@ -50,8 +50,8 @@ subroutine compute_error(error,type_err,iprintGauss)
   use common_var
   !
   implicit none
-  integer :: ix,iv,it,i,j,ig,nave,type_err,iprintGauss, prop_order,gloop
-  double precision :: error,eps,newnorm,sumDet,sumqq,sumqv,sumvv,qqdev,qvdev,vvdev
+  integer :: ix,iv,it,i,j,ig,nave,type_err,iprintGauss, prop_order,gloop,gcorr
+  double precision :: error,eps,newnorm,sumDet,sumqq,sumqv,sumvv,qqdev,qvdev,vvdev,gcorrected
   double precision :: mv2v2,mv2v1,mv2q2,mv2q1,mv1q2,mv1v1,mv1q1, v2real, vreal
   double precision :: cv2v2,cv2v1,cv2q2,cv2q1,cv1q2,cv1v1,cv1q1
   double precision :: realmeanv2v2,realmeanv2v1,realmeanv2q2,realmeanv2q1,realmeanv1q2
@@ -282,6 +282,7 @@ subroutine compute_error(error,type_err,iprintGauss)
       ddgam(1)    =ddgam(2)
       ddgam(ngrid)=ddgam(ngrid-1)
       !
+      
       do gloop =1, 200
         error=0.d0
         sumDet=0.d0
@@ -298,19 +299,23 @@ subroutine compute_error(error,type_err,iprintGauss)
         mv1q1=0.d0
         mv2q1=0.d0
         mv1q2=0.d0
-       
+      
         nave=0
         open(89,file="CorrectionV",status="unknown")
-        open(93,file="LogLUCorrwithParts",status="unknown")
+        open(93,file="LogLUwithParts",status="unknown")
         open(94,file="LogLUDev",status="unknown")
+        open(95,file="LogLUDevGD",status="unknown") 
         do i=1,n_tprop
           do j=ibeg_tprop(i),iend_tprop(i)-dtmult,dtmult
             q      = colvar(j,2)
             q2     = colvar(j+dtmult,2)
             v      = colvar(j,3)
             v2     = colvar(j+dtmult,3)
-            vreal      = colvar(j,4)
-            v2real     = colvar(j+dtmult,4)
+            ! vreal      = colvar(j,4)
+            ! v2real     = colvar(j+dtmult,4)
+            !write(*,*) v, vreal
+            ! v      = vreal
+            ! v2     = v2real
             ig     = int((q-xmin)/dxgrid)+1
             b      =   phi(ig)  -gam(ig)*v
             db     =  dphi(ig) -dgam(ig)*v
@@ -322,6 +327,7 @@ subroutine compute_error(error,type_err,iprintGauss)
 
 
             g = gloop/100.d0
+            !gcorrected = gcorr/10.d0
             dg = 0.d0
             D(ig) = gloop/100.d0
             dD(ig) = 0.d0
@@ -364,18 +370,26 @@ subroutine compute_error(error,type_err,iprintGauss)
             sumvv = sumvv + 0.5d0*Mqq*vv*vv/detM
             
 
-            cv2v2 = 2.d0*ddt*D(ig)/3.d0
-            cv2v1 = 2.d0*ddt*D(ig)/24.d0
+            cv2v2 = 2.d0*ddt/3.d0
+            cv2v1 = 2.d0*ddt/24.d0
+
+            cv2q2 = 2.d0*ddt2/12.d0
+            cv1q2 = 2.d0*ddt2/6.d0
+            cv2q1 = 0.d0
+           
 
 
-            qqdev = qqdev + 0.5d0*Mvv*(q2*q2 + q*q - 2.d0*q*q2 + q2*vreal*(-2.d0*ddt + g*ddt2)&
-                  +q*vreal*(2.d0*ddt - g*ddt2) + (v*v+cv2v2)*(ddt2 - g*ddt3 + 0.25d0*g*g*ddt2*ddt2))/detM
+            qqdev = qqdev + 0.5d0*Mvv*(q2*q2 + q*q - 2.d0*q*q2 + (q2*v+cv1q2)*(-2.d0*ddt + g*ddt2)&
+                  +(q*v+cv2q2)*(2.d0*ddt - g*ddt2) + (v*v+cv2v2)*(ddt2 - g*ddt3 + 0.25d0*g*g*ddt2*ddt2))/detM
             
             vvdev = vvdev + 0.5d0*Mqq*((v2*v2+cv2v2) + (v2*v+cv2v1)*(-2.d0 + 2.d0*g*ddt - g*g*ddt2)& 
-                  + (v*v+cv2v2)*(1.d0 - 2.d0*g*ddt + 2.d0*g*g*ddt2 -g*g*g*ddt3 + 0.25d0*g*g*g*g*ddt2*ddt2))/detM
+                  + (v*v+cv2v2)*(1.d0 - 2.d0*g*ddt &
+                  + 2.d0*g*g*ddt2 -g*g*g*ddt3 + 0.25d0*g*g*g*g*ddt2*ddt2))/detM
 
-            qvdev = qvdev - Mqv*(v2*q2 - v2*q + v*q2*(-1.d0 + g*ddt - 0.5d0*g*g*ddt2) + v*q*(1.d0 - g*ddt + 0.5d0*g*g*ddt2)&
-                  + v*v2*(-ddt + 0.5d0*g*ddt2) + v*v*(ddt - 1.5d0*g*ddt2 + g*g*ddt3 - 0.25d0*g*g*g*ddt2*ddt2))/detM
+            qvdev = qvdev - Mqv*((v2*q2+cv2q2) - v2*q + (v*q2+cv1q2)*(-1.d0 + g*ddt - 0.5d0*g*g*ddt2) &
+                  + (v*q+cv2q2)*(1.d0 - g*ddt + 0.5d0*g*g*ddt2)&
+                  + (v2*v+cv2v1)*(-ddt + 0.5d0*g*ddt2) &
+                  + (v*v+cv2v2)*(ddt - 1.5d0*g*ddt2 + g*g*ddt3 - 0.25d0*g*g*g*ddt2*ddt2))/detM
             
             
             !write(*,*) vv*qq, qvdev
@@ -388,7 +402,7 @@ subroutine compute_error(error,type_err,iprintGauss)
             mv2q1 = mv2q1 + v2*q
 
 
-  
+
             !
             if (iopt.eq.opt_niter) then
               ! note: a=-beta*D*F'+D'
@@ -406,13 +420,17 @@ subroutine compute_error(error,type_err,iprintGauss)
             endif
           enddo
         enddo
-        error = error/dble(nave)
-        write(93,'(6f12.6)') gloop/100.d0,error,sumDet/dble(nave),sumqq/dble(nave),sumqv/dble(nave),sumvv/dble(nave)
-        write(94,'(6f12.6)') gloop/100.d0,error,sumDet/dble(nave),qqdev/dble(nave),qvdev/dble(nave),vvdev/dble(nave)
-        ! write(*,*) 'mv1v1 ','mv2v2 ','mv2v1 ','mv2q2 ','mv1q2 ','mv2q1 '
-        ! write(*,*) mv1v1/dble(nave),mv2v2/dble(nave),mv2v1/dble(nave),mv2q2/dble(nave),mv1q2/dble(nave),mv2q1/dble(nave)
-        !stop
+        !write(*,*) g,(mv1v1/dble(nave)+cv2v2)
+      error = error/dble(nave)
+      write(93,'(6f12.6)') gloop/100.d0,error,sumDet/dble(nave),sumqq/dble(nave),sumqv/dble(nave),sumvv/dble(nave)
+      write(94,'(6f12.6)') gloop/100.d0,error,sumDet/dble(nave),qqdev/dble(nave),qvdev/dble(nave),vvdev/dble(nave)
+      !write(95,'(7f12.6)') gloop/100.d0,gcorr/10.d0,sumDet/dble(nave),qqdev/dble(nave),qvdev/dble(nave),vvdev/dble(nave)
+      ! write(*,*) 'mv1v1 ','mv2v2 ','mv2v1 ','mv2q2 ','mv1q2 ','mv2q1 '
+      ! write(*,*) mv1v1/dble(nave),mv2v2/dble(nave),mv2v1/dble(nave),mv2q2/dble(nave),mv1q2/dble(nave),mv2q1/dble(nave)
+      !stop
       enddo
+    
+      
       !
     endif
     !
@@ -422,6 +440,7 @@ subroutine compute_error(error,type_err,iprintGauss)
     close(89)
     close(93)
     close(94)
+    close(95)
 
     !
   endif
