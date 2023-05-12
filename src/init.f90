@@ -44,109 +44,109 @@ subroutine read_input
   write(*,*) ""
   write(*,*) "----------------------- parsing input file ------------------------"
   write(*,*) ""
-  open(55,file="input",status="old")
+  open(inputfile_id,file="input",status="old")
   !
-  read(55,*) keyword,colvar_file
+  read(inputfile_id,*) keyword,colvar_file
   if (trim(keyword)/="colvar_file")    call error("input: expected keyword colvar_file")
   write(*,*) keyword,colvar_file
   !
-  read(55,*) keyword,dt
+  read(inputfile_id,*) keyword,dt
   if (trim(keyword)/="dt")             call error("input: expected keyword dt")
   write(*,*) keyword,dt
   !
-  read(55,*) keyword,dtmult
+  read(inputfile_id,*) keyword,dtmult
   if (trim(keyword)/="dtmult")         call error("input: expected keyword dtmult")
   write(*,*) keyword,dtmult
   !
-  read(55,*) keyword,xmin
+  read(inputfile_id,*) keyword,xmin
   if (trim(keyword)/="xmin")           call error("input: expected keyword xmin")
   write(*,*) keyword,xmin
   !
-  read(55,*) keyword,xmax
+  read(inputfile_id,*) keyword,xmax
   if (trim(keyword)/="xmax")           call error("input: expected keyword xmax")
   write(*,*) keyword,xmax
   !
-  read(55,*) keyword,nx
+  read(inputfile_id,*) keyword,nx
   if (trim(keyword)/="xbins")          call error("input: expected keyword xbins")
   write(*,*) keyword,nx
   !
-  read(55,*) keyword,kT
+  read(inputfile_id,*) keyword,kT
   if (trim(keyword)/="kT")             call error("input: expected keyword kT")
   write(*,*) keyword,kT
   !
-  read(55,*) keyword,init_taug
+  read(inputfile_id,*) keyword,init_taug
   if (trim(keyword)/="init_tau")     call error("input: expected keyword init_tau")
   write(*,*) keyword,init_taug
   !
-  read(55,*) keyword,opt_niter
+  read(inputfile_id,*) keyword,opt_niter
   if (trim(keyword)/="opt_niter") call error("input: expected keyword opt_niter")
   write(*,*) keyword,opt_niter
   !
-  read(55,*) keyword,opt_temp1,opt_temp2,target_acc
+  read(inputfile_id,*) keyword,opt_temp1,opt_temp2,target_acc
   if (trim(keyword)/="opt_temp") call error("input: expected keyword opt_temp")
   write(*,*) keyword,opt_temp1,opt_temp2,target_acc
   !
-  read(55,*) keyword,type_Langevin
+  read(inputfile_id,*) keyword,type_Langevin
   if (trim(keyword)/="type_Langevin")  call error("input: expected keyword type_Langevin")
   write(*,*) keyword,type_Langevin
   !
-  read(55,*) keyword,ratio_Langevin_MD
+  read(inputfile_id,*) keyword,ratio_Langevin_MD
   if (trim(keyword)/="ratio_Langevin_MD") call error("input: expected keyword ratio_Langevin_MD")
   write(*,*) keyword,ratio_Langevin_MD
   !
-  read(55,*) keyword,fit_F
+  read(inputfile_id,*) keyword,fit_F
   if (trim(keyword)/="fit_F") call error("input: expected keyword fit_F")
   write(*,*) keyword,fit_F
   !
-  read(55,*) keyword,fit_gamm
+  read(inputfile_id,*) keyword,fit_gamm
   if (trim(keyword)/="fit_gamma") call error("input: expected keyword fit_gamma")
   write(*,*) keyword,fit_gamm
   !
-  read(55,*) keyword,fit_taug
+  read(inputfile_id,*) keyword,fit_taug
   if (trim(keyword)/="fit_tau") call error("input: expected keyword fit_tau")
   write(*,*) keyword,fit_taug
   !
-  read(55,*) keyword,fit_mass
+  read(inputfile_id,*) keyword,fit_mass
   if (trim(keyword)/="fit_mass") call error("input: expected keyword fit_mass")
   write(*,*) keyword,fit_mass
   !
-  read(55,*) keyword,type_error
+  read(inputfile_id,*) keyword,type_error
   if (trim(keyword)/="type_error") call error("input: expected keyword type_error")
   write(*,*) keyword,type_error
   !
-  read(55,*) keyword,pos_dep_gamma
+  read(inputfile_id,*) keyword,pos_dep_gamma
   if (trim(keyword)/="pos_dep_gamma") call error("input: expected keyword pos_dep_gamma")
   write(*,*) keyword,pos_dep_gamma
   !
-  read(55,*) keyword,pos_dep_mass
+  read(inputfile_id,*) keyword,pos_dep_mass
   if (trim(keyword)/="pos_dep_mass") call error("input: expected keyword pos_dep_mass")
   write(*,*) keyword,pos_dep_mass
   !
-  read(55,*) keyword,max_Gaussian_h(1:3)
+  read(inputfile_id,*) keyword,max_Gaussian_h(1:3)
   if (trim(keyword)/="max_Gaussian_h") call error("input: expected keyword max_Gaussian_h")
   write(*,*) keyword,max_Gaussian_h(1:3)
   !
-  read(55,*) keyword,max_Gaussian_w(1:3)
+  read(inputfile_id,*) keyword,max_Gaussian_w(1:3)
   if (trim(keyword)/="max_Gaussian_w") call error("input: expected keyword max_Gaussian_w")
   write(*,*) keyword,max_Gaussian_w(1:3)
   !
-  read(55,*) keyword,fix_mass0
+  read(inputfile_id,*) keyword,fix_mass0
   if (trim(keyword)/="fix_mass0") call error("input: expected keyword fix_mass0")
   write(*,*) keyword,pos_dep_mass
   !
-  read(55,*) keyword,use_velocity
+  read(inputfile_id,*) keyword,use_velocity
   if (trim(keyword)/="use_velocity") call error("input: expected keyword use_velocity")
   write(*,*) keyword,use_velocity
   !
-  read(55,*) keyword,dtint_prop
+  read(inputfile_id,*) keyword,dtint_prop
   if (trim(keyword)/="dtint_prop") call error("input: expected keyword dtint_prop")
   write(*,*) keyword,dtint_prop
   !
-  read(55,*) keyword,ntraj_prop
+  read(inputfile_id,*) keyword,ntraj_prop
   if (trim(keyword)/="ntraj_prop") call error("input: expected keyword ntraj_prop")
   write(*,*) keyword,ntraj_prop
   !
-  close(55)
+  close(inputfile_id)
   !
   write(*,*) ""
   if (type_Langevin.eq.0) then
@@ -229,12 +229,12 @@ subroutine read_input
   write(*,*) ""
   write(*,*) "----------------------- reading colvar_file -----------------------"
   write(*,*) ""
-  open(66,file=colvar_file,status="old")
+  open(intraj_id,file=colvar_file,status="old")
   tmax=-1.d0
   i=0
   ntraj_MD=0
   do
-    read(66,'(A100)',end=102) line
+    read(intraj_id,'(A100)',end=102) line
     i=i+1
     if (line(1:1).ne."#") then
       read (line(:),*,err=101) tmp1,tmp2
@@ -246,14 +246,14 @@ subroutine read_input
       write(*,*) "problem reading file at line ",i
       call error("format of colvar_file: t x (two columns)") 
   102 continue
-  rewind(66)
+  rewind(intraj_id)
   allocate(x0(ntraj_MD)) ! here we store the shooting points (they can be different)
   nttot=i                ! total lines in colvar, i.e. total number of time frames
   nt=nint(tmax/dt)+1     ! number of time frames per trajectory, assuming equal durations 
   allocate(colvar(nttot,3)) ! time q dq/dt
   it=0
   do j=1,nttot
-    read(66,*) colvar(j,1),colvar(j,2)
+    read(intraj_id,*) colvar(j,1),colvar(j,2)
     if (colvar(j,1).lt.dt/10.) then ! fill x0 with points x(t=0)
       ! note: the syntax in if() here above is a complicated way of testing if t=0 ...
       it=it+1
@@ -264,7 +264,7 @@ subroutine read_input
     if (colvar(j,2).gt.xmax) call error("position larger than xmax !")
     if (colvar(j,2).lt.xmin) call error("position smaller than xmin !")
   enddo
-  close(66)
+  close(intraj_id)
   ! compute numerical velocity dq/dt
   write(111,'(A)') "# time position numerical_velocity"
   colvar(:,3)=0.d0
@@ -316,14 +316,14 @@ subroutine read_input
     write(*,*) ""
     !
     write(*,*) "reading F(x) gamma(x) mass(x) profiles from file RESTART"
-    open(35,file="RESTART",status="old") ! TODO: check for errors in format and ngrid...
-    read(35,*) line
+    open(restart_id,file="RESTART",status="old") ! TODO: check for errors in format and ngrid...
+    read(restart_id,*) line
     do i=1,ngrid
-      read(35,*) x,prof_F(i),tmp1,prof_g(i),prof_m(i) ! x,F(with units),gamma,mass
+      read(restart_id,*) x,prof_F(i),tmp1,prof_g(i),prof_m(i) ! x,F(with units),gamma,mass
       if (i.eq.1    .and.abs(x-xmin)>dxgrid) call error("xmin is different from first position in RESTART")
       if (i.eq.ngrid.and.abs(x-xmax)>dxgrid) call error("xmax is different from last  position in RESTART")
     enddo
-    close(35) 
+    close(restart_id) 
     !
     call update_prof_force ! important, every time prof_F is changed!
     !
@@ -406,15 +406,15 @@ subroutine init_Pref
 #ifndef DEBUG
   if (type_error.ne.3) then
     write(*,*) "writing Pref file"
-    open(44,file="Pref",status="unknown")
+    open(pref_id,file="Pref",status="unknown")
     do ix=1,nx
       do iv=1,nx
         do it=0,nt
-          write(44,'(4E11.3)') xmin+(dble(ix)-1.d0)*dx,vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Pref(ix,iv,it)
+          write(pref_id,'(4E11.3)') xmin+(dble(ix)-1.d0)*dx,vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Pref(ix,iv,it)
         enddo
       enddo
     enddo
-    close(44)
+    close(pref_id)
   endif
 #endif
 !
@@ -455,14 +455,14 @@ end subroutine init_Pref
 !     Pref=Pref/sum(Pref(:,0))
 !     !
 !     write(*,*) "writing Pref file"
-!     open(44,file="Pref",status="unknown")
+!     open(pref_id,file="Pref",status="unknown")
 !     do ix=1,nx
 !       do it=0,nt
-!         write(44,'(3F15.6)') xmin+(dble(ix)-1.d0)*dx,dble(it)*dt,Pref(ix,it)
+!         write(pref_id,'(3F15.6)') xmin+(dble(ix)-1.d0)*dx,dble(it)*dt,Pref(ix,it)
 !       enddo
-!       write(44,*) ""
+!       write(pref_id,*) ""
 !     enddo
-!     close(44)
+!     close(pref_id)
 !   !
 !   end subroutine init_Pref_onlyxt
 !================================================================================
@@ -507,15 +507,15 @@ end subroutine init_Pref
 !     Qref=Qref/sum(Qref(:,0))
 !     !
 !     write(*,*) "writing Qref file"
-!     open(44,file="Qref",status="unknown")
+!     open(qref_id,file="Qref",status="unknown")
 !     ! NOTE THE INVERSION OF INDECES COMPARED TO Pref FILE
 !     do it=0,nt-1
 !       do iv=1,nx
-!         write(44,'(3F15.6)') vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Qref(iv,it)
+!         write(qref_id,'(3F15.6)') vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Qref(iv,it)
 !       enddo
-!       write(44,*) ""
+!       write(qref_id,*) ""
 !     enddo
-!     close(44)
+!     close(qref_id)
 !   !
 !   end subroutine init_Qref
 !================================================================================
@@ -709,11 +709,11 @@ subroutine init_friction
     enddo
     tau(j)=tau(j)/sum(corr(:,j))
   enddo
-  open(88,file="corr_func",status="unknown")
+  open(corrfunc_id,file="corr_func",status="unknown")
   do i=0,it
-    write(88,'(3F14.5)') i*dt,corr(i,1),corr(i,2)
+    write(corrfunc_id,'(3F14.5)') i*dt,corr(i,1),corr(i,2)
   enddo
-  close(88)
+  close(corrfunc_id)
   write(*,*) "autocorrelation time       =",tau(:)
   do i=1,2
     if (tau(i)<0.) then

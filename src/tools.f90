@@ -34,14 +34,14 @@ subroutine print_profiles
   write(*,*) ""
   write(*,*) "writing F,gamma,mass in PROFILES"
   write(*,*) ""
-  open(77,file="PROFILES",status="unknown")
-  write(77,'(A,E13.4)') "# x F F/kT gamma mass; taug=",taug
+  open(intraj_id,file="PROFILES",status="unknown")
+  write(intraj_id,'(A,E13.4)') "# x F F/kT gamma mass; taug=",taug
   do i=1,ngrid
     x=xmin+dble(i-1)*dxgrid
-    write(77,'(5E15.6)') x,prof_F(i)-minval(prof_F(:)),(prof_F(i)-minval(prof_F(:)))/kT,&
+    write(intraj_id,'(5E15.6)') x,prof_F(i)-minval(prof_F(:)),(prof_F(i)-minval(prof_F(:)))/kT,&
      prof_g(i),prof_m(i)
   enddo
-  close(77)
+  close(intraj_id)
 !
 end subroutine print_profiles
 !================================================================================
@@ -96,7 +96,7 @@ subroutine compute_error(error,type_err,iprintGauss)
     !
     if (iprintGauss.eq.1) then
       ! here we write deviations from model: it should be a normalized Gaussian
-      open(123,file="colvar_disp_scaled_from_prop",status="unknown") 
+      open(colvar_disp_scaled_from_prop_id,file="colvar_disp_scaled_from_prop",status="unknown") 
     endif
     !
     if (type_Langevin.eq.0) then
@@ -105,12 +105,12 @@ subroutine compute_error(error,type_err,iprintGauss)
       prop_order = 2   ! order of the propagator: TODO choose in the input
       !
       if (test_propagator) then
-        open(60,file="err_prop",status="unknown")
-        write(60,'(A)') "# propagator error: avg scaled Likelihood and Kolmogorov-Smirnov (dist, prob)"
-        write(60,'(A)') "# note: for the first, the ideal value is 0.5*[log(2pi)+1] = 1.419"
-        open(61,file="shooting_disp_scaled_from_prop",status="unknown")
-        write(61,'(A)') "# error of the propagator: scaled displacements from Langevin shootings"
-        write(61,'(A)') "# ideally, they should be distributed as a Gaussian N(0,1)"
+        open(errprop_id,file="err_prop",status="unknown")
+        write(errprop_id,'(A)') "# propagator error: avg scaled Likelihood and Kolmogorov-Smirnov (dist, prob)"
+        write(errprop_id,'(A)') "# note: for the first, the ideal value is 0.5*[log(2pi)+1] = 1.419"
+        open(shooting_disp_scaled_from_prop_id,file="shooting_disp_scaled_from_prop",status="unknown")
+        write(shooting_disp_scaled_from_prop_id,'(A)') "# error of the propagator: scaled displacements from Langevin shootings"
+        write(shooting_disp_scaled_from_prop_id,'(A)') "# ideally, they should be distributed as a Gaussian N(0,1)"
         err_prop_L  = 0.D0
         err_prop_KS = 0.D0
         write(*,*) "TESTING THE PROPAGATOR AND EXITING ..."
@@ -144,24 +144,24 @@ subroutine compute_error(error,type_err,iprintGauss)
                qlast(:) = (qlast(:)-q-Mq)/sqrt(Mqq)
                etmp = 0.5d0*log(2.d0*pi) + &
                 sum( qlast(1:ntraj_prop)**2 ) / (ntraj_prop*2.d0) 
-               write(60,'(E14.6,$)') etmp
+               write(errprop_id,'(E14.6,$)') etmp
                err_prop_L = err_prop_L + etmp
                ! compare CDF of qlast with Gaussian CDF:
                call quicksort(qlast,1,ntraj_prop)
-               write(61,'(F11.6)') qlast(:)
+               write(shooting_disp_scaled_from_prop_id,'(F11.6)') qlast(:)
                ! compute Kolmogorov-Smirnov statistic for normal distribution:
                call KSone_normal(qlast,ntraj_prop,dKS,pKS)
-               write(60,'(2F11.6)') dKS,pKS
+               write(errprop_id,'(2F11.6)') dKS,pKS
                err_prop_KS = err_prop_KS + dKS
             endif
           enddo
         enddo
         error = error/dble(nave)
         if (test_propagator) then 
-          write(60,'(A,2E14.6)') "# average errors (Likelihood, Kolmogorov-Smirnov) = ", &
+          write(errprop_id,'(A,2E14.6)') "# average errors (Likelihood, Kolmogorov-Smirnov) = ", &
            err_prop_L/dble(nave),err_prop_KS/dble(nave)
-          close(60)
-          close(61)
+          close(errprop_id)
+          close(shooting_disp_scaled_from_prop_id)
           write(*,*) "END OF THE TEST"
           stop
         endif
@@ -209,30 +209,30 @@ subroutine compute_error(error,type_err,iprintGauss)
                qlast(:) = (qlast(:)-q-Mq)/sqrt(Mqq)
                etmp = 0.5d0*log(2.d0*pi) + &
                 sum( qlast(1:ntraj_prop)**2 ) / (ntraj_prop*2.d0) 
-               write(60,'(E14.6,$)') etmp
+               write(errprop_id,'(E14.6,$)') etmp
                err_prop_L = err_prop_L + etmp
                ! compare CDF of qlast with Gaussian CDF:
                call quicksort(qlast,1,ntraj_prop)
-               write(61,'(F11.6)') qlast(:)
+               write(shooting_disp_scaled_from_prop_id,'(F11.6)') qlast(:)
                !KP: write test rev1
                write(33,'(1I5,6F11.6)') ig,q,q2,dq,a(ig),Mq,Mqq 
                ! compute Kolmogorov-Smirnov statistic for normal distribution:
                call KSone_normal(qlast,ntraj_prop,dKS,pKS)
-               write(60,'(2F11.6)') dKS,pKS
+               write(errprop_id,'(2F11.6)') dKS,pKS
                err_prop_KS = err_prop_KS + dKS
             endif
             !
             if (iprintGauss.eq.1) then
-              write(123,'(f9.5)') sqrt(1.d0/Mqq)*qq
+              write(colvar_disp_scaled_from_prop_id,'(f9.5)') sqrt(1.d0/Mqq)*qq
             endif
           enddo
         enddo
         error = error/dble(nave)
         if (test_propagator) then 
-          write(60,'(A,2E14.6)') "# average errors (Likelihood, Kolmogorov-Smirnov) = ", &
+          write(errprop_id,'(A,2E14.6)') "# average errors (Likelihood, Kolmogorov-Smirnov) = ", &
            err_prop_L/dble(nave),err_prop_KS/dble(nave)
-          close(60)
-          close(61)
+          close(errprop_id)
+          close(shooting_disp_scaled_from_prop_id)
           write(*,*) "END OF THE TEST"
           stop
         endif
@@ -317,7 +317,7 @@ subroutine compute_error(error,type_err,iprintGauss)
             Lqq = dsqrt(Mvv)
             Lqv = -Mqv/Lqq
             Lvv = dsqrt(Mqq-Mqv*Mqv/Mvv)
-            write(123,'(2f9.5)') (Lqq*qq+Lqv*vv)/dsqrt(detM), Lqv*vv/dsqrt(detM)
+            write(colvar_disp_scaled_from_prop_id,'(2f9.5)') (Lqq*qq+Lqv*vv)/dsqrt(detM), Lqv*vv/dsqrt(detM)
           endif
         enddo
       enddo
@@ -326,7 +326,7 @@ subroutine compute_error(error,type_err,iprintGauss)
     endif
     !
     if (iprintGauss.eq.1) then
-      close(123)
+      close(colvar_disp_scaled_from_prop_id)
     endif
     !
   endif

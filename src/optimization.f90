@@ -223,15 +223,15 @@ subroutine optimize_Pmod
           call compute_error(err,3,1)
         endif
         !
-        !open(33,file="Pmod",status="unknown")
+        !open(pmod_id,file="Pmod",status="unknown")
         !do ix=1,nx
         !  do iv=1,nx
         !    do it=0,nt
-        !      write(33,'(4F11.6)') xmin+(dble(ix)-1.d0)*dx,vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Pmod(ix,iv,it)
+        !      write(pmod_id,'(4F11.6)') xmin+(dble(ix)-1.d0)*dx,vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Pmod(ix,iv,it)
         !    enddo
         !  enddo
         !enddo
-        !close(33)
+        !close(pmod_id)
       endif
       !
     endif
@@ -284,14 +284,14 @@ subroutine optimize_Pmod
     bestF(nbestF+2,i)=sqrt(sum((bestF(1:nbestF,i)-bestF(nbestF+1,i))**2)/dble(nbestF)) ! RMSD
   enddo
   bestF(nbestF+1,1:ngrid)=bestF(nbestF+1,1:ngrid)-minval(bestF(nbestF+1,1:ngrid))
-  open(77,file="AVERF",status="unknown")
-  write(77,'(A)') "# x averF RMSD averF(kT) RMSD(kT)"
+  open(averf_id,file="AVERF",status="unknown")
+  write(averf_id,'(A)') "# x averF RMSD averF(kT) RMSD(kT)"
   x=0.d0
   do i=1,ngrid
     x=xmin+dble(i-1)*dxgrid
-    write(77,'(5F16.8)') x,bestF(nbestF+1,i),bestF(nbestF+2,i),bestF(nbestF+1,i)/kT,bestF(nbestF+2,i)/kT
+    write(averf_id,'(5F16.8)') x,bestF(nbestF+1,i),bestF(nbestF+2,i),bestF(nbestF+1,i)/kT,bestF(nbestF+2,i)/kT
   enddo
-  close(77)
+  close(averf_id)
   write(*,*) "written average of the ",nbestF," best free energy profiles in AVERF"
   !
   print_traj=.true. ! TODO this is now disabled...
@@ -299,18 +299,18 @@ subroutine optimize_Pmod
   call compute_Pmod ! run ntraj_Langevin simulations and compute Pmod
   !write(*,*) "final trajectories written in fort.111"
   if (type_error.ne.3) then
-    open(33,file="Pmod",status="unknown")
-    open(34,file="Pdiff",status="unknown")
+    open(pmod_id,file="Pmod",status="unknown")
+    open(pdiff_id,file="Pdiff",status="unknown")
     do ix=1,nx
       do iv=1,nx
         do it=0,nt
-          write(33,'(4E11.3)') xmin+(dble(ix)-1.d0)*dx,vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Pmod(ix,iv,it)
-          write(34,'(4E11.3)') xmin+(dble(ix)-1.d0)*dx,vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Pref(ix,iv,it)-Pmod(ix,iv,it)
+          write(pmod_id,'(4E11.3)') xmin+(dble(ix)-1.d0)*dx,vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Pmod(ix,iv,it)
+          write(pdiff_id,'(4E11.3)') xmin+(dble(ix)-1.d0)*dx,vmin+(dble(iv)-1.d0)*dv,dble(it)*dt,Pref(ix,iv,it)-Pmod(ix,iv,it)
         enddo
       enddo
     enddo
-    close(33)
-    close(34)
+    close(pmod_id)
+    close(pdiff_id)
     write(*,*) "written Pmod and Pdiff"
   endif
   !
