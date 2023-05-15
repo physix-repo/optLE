@@ -209,7 +209,7 @@ subroutine optimize_Pmod
         prof_g_best  = prof_g
         prof_m_best  = prof_m
         !
-        iu=500000000+iopt
+        iu=500000000+iopt  !! Put everything in 1 file instead if a file per profile?
         open(iu,status="unknown")
         write(iu,'(A,2E13.5)') "# x F F/kT gamma mass ; taug, err=",taug,err
         do i=1,ngrid
@@ -284,7 +284,7 @@ subroutine optimize_Pmod
     bestF(nbestF+2,i)=sqrt(sum((bestF(1:nbestF,i)-bestF(nbestF+1,i))**2)/dble(nbestF)) ! RMSD
   enddo
   bestF(nbestF+1,1:ngrid)=bestF(nbestF+1,1:ngrid)-minval(bestF(nbestF+1,1:ngrid))
-  open(averf_id,file="AVERF",status="unknown")
+  open(averf_id,file=trim(colvar_file)//".AVERF",status="unknown")
   write(averf_id,'(A)') "# x averF RMSD averF(kT) RMSD(kT)"
   x=0.d0
   do i=1,ngrid
@@ -299,8 +299,8 @@ subroutine optimize_Pmod
   call compute_Pmod ! run ntraj_Langevin simulations and compute Pmod
   !write(*,*) "final trajectories written in fort.111"
   if (type_error.ne.3) then
-    open(pmod_id,file="Pmod",status="unknown")
-    open(pdiff_id,file="Pdiff",status="unknown")
+    open(pmod_id,file=trim(colvar_file)//".Pmod",status="unknown")
+    open(pdiff_id,file=trim(colvar_file)//".Pdiff",status="unknown")
     do ix=1,nx
       do iv=1,nx
         do it=0,nt

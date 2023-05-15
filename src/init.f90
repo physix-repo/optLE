@@ -35,7 +35,7 @@ subroutine read_input
 ! 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! README_end
   implicit none
-  character :: keyword*20,colvar_file*40
+  character :: keyword*20
   character :: line*100
   double precision :: tmp1,tmp2,x
   integer :: i,j,it
@@ -271,8 +271,10 @@ subroutine read_input
   do j=2,nttot-1
     if (colvar(j+1,1).gt.colvar(j-1,1)) then ! avoid time discontinuity
       colvar(j,3) = ( colvar(j+1,2)-colvar(j-1,2) )/(2.d0*dt)
-    endif 
-    write(110,'(F18.8,2F18.10)') colvar(j,1),colvar(j,2),colvar(j,3)
+    endif
+    open(rewrite_intraj_id, file=trim(colvar_file)//".trajectories")
+    write(rewrite_intraj_id,'(F18.8,2F18.10)') colvar(j,1),colvar(j,2),colvar(j,3)
+    close(rewrite_intraj_id)
   enddo
   write(*,*) "written numerical velocities in fort.111"
   ! store indeces of q,dq/dt points for propagator estimation
@@ -406,7 +408,7 @@ subroutine init_Pref
 #ifndef DEBUG
   if (type_error.ne.3) then
     write(*,*) "writing Pref file"
-    open(pref_id,file="Pref",status="unknown")
+    open(pref_id,file=trim(colvar_file)//".Pref",status="unknown")
     do ix=1,nx
       do iv=1,nx
         do it=0,nt
@@ -709,7 +711,7 @@ subroutine init_friction
     enddo
     tau(j)=tau(j)/sum(corr(:,j))
   enddo
-  open(corrfunc_id,file="corr_func",status="unknown")
+  open(corrfunc_id,file=trim(colvar_file)//".corr_func",status="unknown")
   do i=0,it
     write(corrfunc_id,'(3F14.5)') i*dt,corr(i,1),corr(i,2)
   enddo

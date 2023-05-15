@@ -34,7 +34,7 @@ subroutine print_profiles
   write(*,*) ""
   write(*,*) "writing F,gamma,mass in PROFILES"
   write(*,*) ""
-  open(intraj_id,file="PROFILES",status="unknown")
+  open(intraj_id,file=trim(colvar_file)//".profile",status="unknown")
   write(intraj_id,'(A,E13.4)') "# x F F/kT gamma mass; taug=",taug
   do i=1,ngrid
     x=xmin+dble(i-1)*dxgrid
@@ -69,7 +69,8 @@ subroutine compute_error(error,type_err,iprintGauss)
   double precision :: qlast(ntraj_prop),qtmp,etmp,erftmp,obs_noise
   double precision, parameter :: pi=3.14159265359d0, pi2=pi*pi, sqrt2=sqrt(2.)
   !
-  if (iopt.eq.opt_niter) write(654,'(a)') '# time observed_noise'
+  open(noise_id, file=trim(colvar_file)//".noise")
+  if (iopt.eq.opt_niter) write(noise_id,'(a)') '# time observed_noise'
   if (type_err.eq.1) then
     !
     ! Kullback-Leibler divergence: err=sum(-Pref*log(Pmod/Pref))
@@ -96,7 +97,7 @@ subroutine compute_error(error,type_err,iprintGauss)
     !
     if (iprintGauss.eq.1) then
       ! here we write deviations from model: it should be a normalized Gaussian
-      open(colvar_disp_scaled_from_prop_id,file="colvar_disp_scaled_from_prop",status="unknown") 
+      open(colvar_disp_scaled_from_prop_id,file=trim(colvar_file)//".colvar_disp_scaled_from_prop",status="unknown") 
     endif
     !
     if (type_Langevin.eq.0) then
@@ -201,7 +202,7 @@ subroutine compute_error(error,type_err,iprintGauss)
             if (iopt.eq.opt_niter) then
               ! note: a=-beta*D*F'+D'
               obs_noise = (dq-a(ig)*ddt)/dsqrt(2.d0*D(ig)*ddt)
-              write(654,'(f12.6,f12.6)') colvar(j,1),obs_noise
+              write(noise_id,'(f12.6,f12.6)') colvar(j,1),obs_noise
             endif
             if (test_propagator) then 
                call prop_via_traj(q,q2,dt*dtmult,qlast)
@@ -215,7 +216,7 @@ subroutine compute_error(error,type_err,iprintGauss)
                call quicksort(qlast,1,ntraj_prop)
                write(shooting_disp_scaled_from_prop_id,'(F11.6)') qlast(:)
                !KP: write test rev1
-               write(33,'(1I5,6F11.6)') ig,q,q2,dq,a(ig),Mq,Mqq 
+               write(33,'(1I5,6F11.6)') ig,q,q2,dq,a(ig),Mq,Mqq  !! is this written in Pmod?
                ! compute Kolmogorov-Smirnov statistic for normal distribution:
                call KSone_normal(qlast,ntraj_prop,dKS,pKS)
                write(errprop_id,'(2F11.6)') dKS,pKS
@@ -227,6 +228,7 @@ subroutine compute_error(error,type_err,iprintGauss)
             endif
           enddo
         enddo
+        close(noise_id)
         error = error/dble(nave)
         if (test_propagator) then 
           write(errprop_id,'(A,2E14.6)') "# average errors (Likelihood, Kolmogorov-Smirnov) = ", &
