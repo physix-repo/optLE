@@ -4,7 +4,7 @@ subroutine optimize_Pmod
   use common_var
   !
   implicit none
-  integer :: i,ix,iv,it,nacc,nacc_last,iu,ifit,jfit
+  integer :: i,ix,iv,it,nacc,nacc_last,ifit,jfit
   double precision :: err1,err2,minerr1,minerr2, opt_temp 
   double precision :: err,err_old,err_best
   double precision :: taug_old,taug_best
@@ -76,6 +76,10 @@ subroutine optimize_Pmod
   write(*,*) "########################################################################"
   write(*,*) "MAIN LOOP: iopt, err(-logL,RMSD), acc, gamm, taug, mass, moved_par, optT"
   write(*,*) "########################################################################"
+  !
+  open(profhistory_id, file=trim(colvar_file)//".history")
+  write(profhistory_id,'(A,2E13.5)') "# x F F/kT gamma mass ; taug, err=",taug,err
+  close(profhistory_id)
   !
   gaussian=.true.
   opt_temp=opt_temp1
@@ -209,15 +213,15 @@ subroutine optimize_Pmod
         prof_g_best  = prof_g
         prof_m_best  = prof_m
         !
-        iu=500000000+iopt  !! Put everything in 1 file instead if a file per profile?
-        open(iu,status="unknown")
-        write(iu,'(A,2E13.5)') "# x F F/kT gamma mass ; taug, err=",taug,err
+        open(profhistory_id, file=trim(colvar_file)//".history", position='append') !Should add status='old'?
         do i=1,ngrid
           x=xmin+dble(i-1)*dxgrid
-          write(iu,'(5E13.5)') x,prof_F(i)-minval(prof_F(:)), &
+          write(profhistory_id,'(5E13.5)') x,prof_F(i)-minval(prof_F(:)), &
            (prof_F(i)-minval(prof_F(:)))/kT,prof_g(i),prof_m(i)
         enddo
-        close(iu)
+        write(profhistory_id,*) ""
+        write(profhistory_id,*) ""
+        close(profhistory_id)
         !
         if (type_error==3) then
           call compute_error(err,3,1)
