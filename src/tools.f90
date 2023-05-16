@@ -216,7 +216,7 @@ subroutine compute_error(error,type_err,iprintGauss)
                call quicksort(qlast,1,ntraj_prop)
                write(shooting_disp_scaled_from_prop_id,'(F11.6)') qlast(:)
                !KP: write test rev1
-               write(33,'(1I5,6F11.6)') ig,q,q2,dq,a(ig),Mq,Mqq  !! is this written in Pmod?
+               write(33,'(1I5,6F11.6)') ig,q,q2,dq,a(ig),Mq,Mqq
                ! compute Kolmogorov-Smirnov statistic for normal distribution:
                call KSone_normal(qlast,ntraj_prop,dKS,pKS)
                write(errprop_id,'(2F11.6)') dKS,pKS
