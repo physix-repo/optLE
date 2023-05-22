@@ -18,13 +18,17 @@ module common_var
   double precision :: prof_F(ngrid),prof_force(ngrid),prof_g(ngrid),prof_m(ngrid)
   double precision :: max_Gaussian_h(3),max_Gaussian_w(3)
   character :: colvar_file*40
-  !Inputs :
+  !Input ids :
   integer :: intraj_id=66, inputfile_id=55, restart_id=35
-  ! Outputs :
+  ! Output ids :
   integer :: profiles_id=77, noise_id=654, corrfunc_id=88, averf_id=78
   integer :: pref_id=44, qref_id=45, pmod_id=33, pdiff_id=34, errprop_id=60
   integer :: colvar_disp_scaled_from_prop_id=123, shooting_disp_scaled_from_prop_id=61
   integer :: rewrite_intraj_id=110, profhistory_id=500
+  ! timedepbias
+  integer :: timedepbias, biased=1, unbiased=0
+  double precision, allocatable :: fbias_t(:)
+
 !
 end module common_var
 !================================================================================

@@ -32,7 +32,8 @@ subroutine read_input
 !max_Gaussian_w   0.05 0.05 0.05 (max width of Gaussians added, units of (xmax-xmin))
 !fix_mass0          1            (keep fixed the value of the mass at the TS)
 !use_velocity       1            (0 = optimize P(x,t), 1 = optimize P(x,v,t)
-! 
+!timedepbias        0            (0=unbiased, 1=biased)
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! README_end
   implicit none
   character :: keyword*20
@@ -146,6 +147,10 @@ subroutine read_input
   if (trim(keyword)/="ntraj_prop") call error("input: expected keyword ntraj_prop")
   write(*,*) keyword,ntraj_prop
   !
+  read(inputfile_id,*) keyword,timedepbias
+  if (trim(keyword)/="timedepbias") call error("input: expected keyword timedepbias")
+  write(*,*) keyword,timedepbias
+  !
   close(inputfile_id)
   !
   write(*,*) ""
@@ -222,6 +227,13 @@ subroutine read_input
     write(*,*) "opt_temp will be linearly changed between initial and final one"
   endif
   !
+  write(*,*) ""
+  if(timedepbias==unbiased) then
+  	write(*,*) "unbiased trajectory"
+  else if (timedepbias==biased) then
+  	write(*,*) "biased trajectory"
+  endif
+  !
   dxgrid=(xmax-xmin)/dble(ngrid-1) 
   dxgrid2=2.d0*dxgrid
   !
@@ -251,9 +263,14 @@ subroutine read_input
   nttot=i                ! total lines in colvar, i.e. total number of time frames
   nt=nint(tmax/dt)+1     ! number of time frames per trajectory, assuming equal durations 
   allocate(colvar(nttot,3)) ! time q dq/dt
+  allocate(fbias_t(nttot))
   it=0
   do j=1,nttot
-    read(intraj_id,*) colvar(j,1),colvar(j,2)
+    if (timedepbias == unbiased) then
+      read(intraj_id,*) colvar(j,1),colvar(j,2)
+    else if (timedepbias == biased) then
+      read(intraj_id,*) colvar(j,1),colvar(j,2), fbias_t(j)
+    endif
     if (colvar(j,1).lt.dt/10.) then ! fill x0 with points x(t=0)
       ! note: the syntax in if() here above is a complicated way of testing if t=0 ...
       it=it+1

@@ -68,6 +68,7 @@ subroutine compute_error(error,type_err,iprintGauss)
   integer :: itraj
   double precision :: qlast(ntraj_prop),qtmp,etmp,erftmp,obs_noise
   double precision, parameter :: pi=3.14159265359d0, pi2=pi*pi, sqrt2=sqrt(2.)
+  double precision :: fbias_q(ngrid) !! mynote
   !
   open(noise_id, file=trim(colvar_file)//".noise")
   if (iopt.eq.opt_niter) write(noise_id,'(a)') '# time observed_noise'
@@ -103,7 +104,8 @@ subroutine compute_error(error,type_err,iprintGauss)
     if (type_Langevin.eq.0) then
       !
       ! log likelihood from short-time overdamped propagator
-      prop_order = 2   ! order of the propagator: TODO choose in the input
+      prop_order = 1   ! order of the propagator: TODO choose in the input
+      ! time dependant bias treatment only implemented for order one for now.
       !
       if (test_propagator) then
         open(errprop_id,file="err_prop",status="unknown")
@@ -134,7 +136,12 @@ subroutine compute_error(error,type_err,iprintGauss)
             q2    = colvar(j+dtmult,2)
             dq    = q2-q
             ig    = int((q-xmin)/dxgrid)+1 ! pre-point
-            Mq    = a(ig)*ddt ! we leave q out
+            if (timedepbias == unbiased) then
+              Mq  = a(ig)*ddt ! we leave q out
+              !! note : bias in the way to bin, should interpolate between 2 points or shift the grid ?
+            else if (timedepbias == biased) then ! else if to allow other kind of changes in future.
+              Mq  = ( a(ig) + D(ig)*fbias_t(j)/kT )*ddt
+            endif
             Mqq   = 2.d0*D(ig)*ddt
             minuslogL = 0.5d0*log(2.d0*pi*Mqq) + (dq-Mq)**2 / (2.d0*Mqq)
             error = error + minuslogL
@@ -216,7 +223,7 @@ subroutine compute_error(error,type_err,iprintGauss)
                call quicksort(qlast,1,ntraj_prop)
                write(shooting_disp_scaled_from_prop_id,'(F11.6)') qlast(:)
                !KP: write test rev1
-               write(33,'(1I5,6F11.6)') ig,q,q2,dq,a(ig),Mq,Mqq  !! is this written in Pmod?
+               write(33,'(1I5,6F11.6)') ig,q,q2,dq,a(ig),Mq,Mqq
                ! compute Kolmogorov-Smirnov statistic for normal distribution:
                call KSone_normal(qlast,ntraj_prop,dKS,pKS)
                write(errprop_id,'(2F11.6)') dKS,pKS
@@ -547,4 +554,34 @@ recursive subroutine quicksort(a, first, last)
   if (first < i-1) call quicksort(a, first, i-1)
   if (j+1 < last)  call quicksort(a, j+1, last)
 end subroutine quicksort
-!================================================================================
+!================================================================================!
+subroutine convert_Ft_to_Fq(fq, nptgridx)
+  !! Might be useless, we only need fbias(t) for now) !!
+  !convert fbias(t) into fbias(q)
+  !inputs : fq = array receiving fbias(x) 
+  !nptgridx = number of point on the x grid => size of fq
+  use common_var
+  implicit none
+  integer, intent(in) :: nptgridx
+  double precision, dimension(ngrid), intent(inout) :: fq
+  integer, dimension(ngrid) :: nf
+  integer :: ix, it
+  integer :: ntimes
+  ntimes = size(fbias_t)
+  nf = 0
+  fq = 0.
+  do it=1, ntimes
+    ix = floor( (colvar(it, 2) - xmin)/dxgrid)
+    fq(ix) = fq(ix) + fbias_t(it)
+    nf(ix) = nf(ix) + 1
+  enddo
+  do ix=1, nptgridx
+    if (nf(ix) == 0) then
+      fq(ix) = 0.
+    else
+      fq(ix) = fq(ix)/nf(ix)
+      endif
+  enddo
+end subroutine convert_Ft_to_Fq
+!================================================================================!
+
