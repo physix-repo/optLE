@@ -1,12 +1,12 @@
 colvar_file       colvar        (format: t x, multiple trajectoires appended)  
-dt                0.01          (time step in colvar file)
+dt                1.0          (time step in colvar file)
 dtmult            1             (time step for integration dtint = dt/dtmult)
-xmin            -1.8            (min and max value of the CV in the colvar)
-xmax             1.8
+xmin             -5.5            (min and max value of the CV in the colvar)
+xmax             5.5
 xbins            40             (used for x and v histograms in old version: not used now)
 kT               1.0
 init_tau         400.           (not used in overdamped optimization)
-opt_niter        100000         (optimization steps, 0 = just print one traj and stop)
+opt_niter        1000         (optimization steps, 0 = just print one traj and stop)
 opt_temp         3e-4 3e-4 0.05    (annealing T: initial, final, target acceptance)
 type_Langevin      0            (0 = overdamped, 1 = std, 2 = GLE)
 ratio_Langevin_MD  1            (ratio between number of Langevin traj and MD traj)
@@ -23,4 +23,4 @@ fix_mass0          0            (keep fixed the value of the mass at the TS)
 use_velocity       0            (0 = optimize P(x,t), 1 = optimize P(x,v,t))
 dtint_prop         0.1          (time step for integration in propagator test)
 ntraj_prop         10           (number of trajs to test the propagator)
-timedepbias        0            (0=unbiased, 1=biased)
+timedepbias        1            (0=unbiased, 1=biased)

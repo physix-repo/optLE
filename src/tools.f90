@@ -146,6 +146,10 @@ subroutine compute_error(error,type_err,iprintGauss)
             minuslogL = 0.5d0*log(2.d0*pi*Mqq) + (dq-Mq)**2 / (2.d0*Mqq)
             error = error + minuslogL
             nave  = nave+1
+            if (iopt.eq.opt_niter) then
+              obs_noise = (dq-a(ig)*ddt)/dsqrt(2.d0*D(ig)*ddt)
+              write(noise_id,'(f12.6,f12.6)') colvar(j,1),obs_noise
+            endif
             if (test_propagator) then 
                call prop_via_traj(q,q2,dt*dtmult,qlast)
                ! compute likelihood of propagator given Langevin shootings on scaled data:
@@ -161,6 +165,9 @@ subroutine compute_error(error,type_err,iprintGauss)
                call KSone_normal(qlast,ntraj_prop,dKS,pKS)
                write(errprop_id,'(2F11.6)') dKS,pKS
                err_prop_KS = err_prop_KS + dKS
+            endif
+            if (iprintGauss.eq.1) then
+              write(colvar_disp_scaled_from_prop_id,'(f9.5)') sqrt(1.d0/Mqq)*qq
             endif
           enddo
         enddo
@@ -235,7 +242,6 @@ subroutine compute_error(error,type_err,iprintGauss)
             endif
           enddo
         enddo
-        close(noise_id)
         error = error/dble(nave)
         if (test_propagator) then 
           write(errprop_id,'(A,2E14.6)') "# average errors (Likelihood, Kolmogorov-Smirnov) = ", &
@@ -246,6 +252,7 @@ subroutine compute_error(error,type_err,iprintGauss)
           stop
         endif
       endif
+      close(noise_id)
       !
     elseif (type_Langevin.eq.1) then
       !
