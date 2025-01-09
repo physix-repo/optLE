@@ -121,6 +121,7 @@ subroutine optimize_Pmod
           call update_prof_force ! important, every time prof_F is changed!
         endif
         jfit=jfit+1
+        !write(837,"(2F11.6)") prof_F
       endif
       !
       if (fit_gamm.eq.1) then
@@ -210,14 +211,14 @@ subroutine optimize_Pmod
         prof_m_best  = prof_m
         !
         iu=500000000+iopt
-        open(iu,status="unknown")
-        write(iu,'(A,2E13.5)') "# x F F/kT gamma mass ; taug, err=",taug,err
-        do i=1,ngrid
-          x=xmin+dble(i-1)*dxgrid
-          write(iu,'(5E13.5)') x,prof_F(i)-minval(prof_F(:)), &
-           (prof_F(i)-minval(prof_F(:)))/kT,prof_g(i),prof_m(i)
-        enddo
-        close(iu)
+        !open(iu,status="unknown")
+        !write(iu,'(A,2E13.5)') "# x F F/kT gamma mass ; taug, err=",taug,err
+        !do i=1,ngrid
+        !  x=xmin+dble(i-1)*dxgrid
+        !  write(iu,'(5E13.5)') x,prof_F(i)-minval(prof_F(:)), &
+        !   (prof_F(i)-minval(prof_F(:)))/kT,prof_g(i),prof_m(i)
+        !enddo
+        !close(iu)
         !
         if (type_error==3) then
           call compute_error(err,3,1)
@@ -237,7 +238,7 @@ subroutine optimize_Pmod
     endif
     !
     if (acc.eq." Y") then
-      write(*,'(I8,2x,2E14.6,3X,A,3E12.4,3X,A4,3X,E11.4)') &
+      write(*,'(I8,2x,2E14.6,3X,A,3E12.4,3X,A4,3X,E11.4,2E14.6,2E14.6)') &
        iopt,err1,err2,acc,sum(prof_g(:))/ngrid,taug,sum(prof_m(:))/ngrid,mmmm,opt_temp
     endif
     !
@@ -380,9 +381,8 @@ subroutine add_gaussian(iprof,max_height,max_width)
   !
   implicit none
   integer :: iprof,i,deltai,pos,imin,imax
-  double precision :: r,width,height,max_height,max_width,profmin
-  double precision, parameter :: shift=dexp(-4.d0*4.d0/2.d0) ! about 0.0003
-  !
+  double precision :: r,width,height,max_height,max_width,profmin,gauss_added(ngrid)
+  double precision, parameter :: shift=0.d0 ! previously it was dexp(-4.d0*4.d0/2.d0) ! about 0.0003
   ! --- set Gaussian parameters
   call random_number(r)
   pos    = int(r*ngrid)+1
@@ -393,12 +393,19 @@ subroutine add_gaussian(iprof,max_height,max_width)
   height = max_height*(2.d0*r-1.d0) ! positive or negative
   !
   ! --- add Gaussian (truncated and shifted, for continuity) to profile
-  deltai = int(width*4.d0/dxgrid)
-  imin   = max(1,pos-deltai)
-  imax   = min(ngrid,pos+deltai)
+  ! buggy version until 12/12/24: deltai = int(width*4.d0/dxgrid)
+  deltai = int(width*4.d0)
+  !old buggy lines (the problem is that units are incompatible...):
+  !imin   = max(1,pos-deltai)
+  !imax   = min(ngrid,pos+deltai)
+  imin = 1
+  imax = ngrid
+  gauss_added(:) = 0.d0
   if (iprof==1) then ! free energy
     do i=imin,imax
-      prof_F(i) = prof_F(i)+height*(dexp(-0.5d0*((pos-i)/width)**2)-shift)
+      ! ------ Line debug
+      gauss_added(i) = height*(dexp(-0.5d0*((pos-i)/width)**2)-shift)
+      prof_F(i) = prof_F(i)+ gauss_added(i)
     enddo
   endif
   if (iprof==2) then ! gamma

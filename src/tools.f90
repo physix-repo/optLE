@@ -50,7 +50,7 @@ subroutine compute_error(error,type_err,iprintGauss)
   use common_var
   !
   implicit none
-  integer :: ix,iv,it,i,j,ig,nave,type_err,iprintGauss, prop_order
+  integer :: ix,iv,it,i,j,ig,nave,type_err,iprintGauss
   double precision :: error,eps,newnorm
   double precision :: dq,ddq,diff(ngrid),delta
   double precision :: a(ngrid),da(ngrid),dda(ngrid)       ! drift       and derivatives
@@ -62,10 +62,10 @@ subroutine compute_error(error,type_err,iprintGauss)
   double precision :: q,v,v1,v2,q3,q2,q1,q0,f1,g1,sigma2,tau 
   double precision :: g,dg,ddt,ddt2,ddt3,tmp, qq,vv
   double precision :: Mq,Mqq,Mv,Mvv,Mqv,detM
-  double precision :: Lqq,Lqv,Lvv
+  double precision :: Lqq,Lqv,Lvv,upp,low
   double precision :: minuslogL,err_prop_L,err_prop_KS,dKS,pKS,p_traj
   !integer, parameter :: ntraj
-  integer :: itraj
+  integer :: itraj, k, indx
   double precision :: qlast(ntraj_prop),qtmp,etmp,erftmp,obs_noise
   double precision, parameter :: pi=3.14159265359d0, pi2=pi*pi, sqrt2=sqrt(2.)
   !
@@ -102,7 +102,7 @@ subroutine compute_error(error,type_err,iprintGauss)
     if (type_Langevin.eq.0) then
       !
       ! log likelihood from short-time overdamped propagator
-      prop_order = 2   ! order of the propagator: TODO choose in the input
+      !prop_order = 1   ! order of the propagator: TODO choose in the input
       !
       if (test_propagator) then
         open(60,file="err_prop",status="unknown")
@@ -124,8 +124,11 @@ subroutine compute_error(error,type_err,iprintGauss)
       dD(ngrid)=dD(ngrid-1)
       a(:)=( D(:)*prof_force(:)/kT + dD(:) )
       !
+      !write(837,"(2F11.6,2F11.6)") dD(:), prof_force(:)
       if (prop_order.eq.1) then
         error=0.d0
+        term1=0.d0
+        term2=0.d0
         nave=0
         do i=1,n_tprop
           do j=ibeg_tprop(i),iend_tprop(i)-dtmult,dtmult
@@ -135,9 +138,10 @@ subroutine compute_error(error,type_err,iprintGauss)
             ig    = int((q-xmin)/dxgrid)+1 ! pre-point
             Mq    = a(ig)*ddt ! we leave q out
             Mqq   = 2.d0*D(ig)*ddt
-            minuslogL = 0.5d0*log(2.d0*pi*Mqq) + (dq-Mq)**2 / (2.d0*Mqq)
+            k = int((colvar(j,2) - xmin) / bin_width) + 1
+            minuslogL = (0.5d0*log(2.d0*pi*Mqq) + (dq-Mq)**2 / (2.d0*Mqq))*inv_hist_traj(k)
             error = error + minuslogL
-            nave  = nave+1
+            nave  = nave+1 
             if (test_propagator) then 
                call prop_via_traj(q,q2,dt*dtmult,qlast)
                ! compute likelihood of propagator given Langevin shootings on scaled data:
@@ -156,6 +160,8 @@ subroutine compute_error(error,type_err,iprintGauss)
             endif
           enddo
         enddo
+        !write(837,"(2F11.6,2F11.6)") dD(:), prof_force(:)
+        write(33,*) a(ig),Mq,Mqq,da(ig)
         error = error/dble(nave)
         if (test_propagator) then 
           write(60,'(A,2E14.6)') "# average errors (Likelihood, Kolmogorov-Smirnov) = ", &
@@ -186,22 +192,27 @@ subroutine compute_error(error,type_err,iprintGauss)
         !
         error=0.d0
         nave=0
+        term1 = 0.d0
+        term2 = 0.d0
         do i=1,n_tprop
           do j=ibeg_tprop(i),iend_tprop(i)-dtmult,dtmult
-             q    = colvar(j,2) 
-            q2    = colvar(j+dtmult,2)
-            dq    = q2-q
-            ig    = int((q-xmin)/dxgrid)+1 ! pre-point
-            Mq    = a(ig)*ddt+0.5d0*( a(ig)*da(ig)+dda(ig)*D(ig) )*ddt2 ! we leave q out
-            Mqq   = 2.d0*D(ig)*ddt+( a(ig)*dD(ig)+2.d0*da(ig)*D(ig)+D(ig)*ddD(ig) )*ddt2
-            qq    = dq-Mq
-            minuslogL = 0.5d0*log(2.d0*pi*Mqq) + qq*qq / (2.d0*Mqq)
-            error = error + minuslogL
-            nave  = nave+1
+              q = colvar(j, 2)
+              q2 = colvar(j + dtmult, 2)
+              dq = q2 - q
+              ig = int((q-xmin)/dxgrid)+1 ! pre-point
+              Mq = a(ig) * ddt + 0.5d0 * (a(ig) * da(ig) + dda(ig) * D(ig)) * ddt2
+              Mqq = 2.d0 * D(ig) * ddt + (a(ig) * dD(ig) + 2.d0 * da(ig) * D(ig) + D(ig) * ddD(ig)) * ddt2
+              qq = dq - Mq
+              ! check q is in which bin 
+              k = int((colvar(j,2) - xmin) / bin_width) + 1 
+              minuslogL = (0.5d0 * log(2.d0 * pi * Mqq) + qq * qq / (2.d0 * Mqq)) * (inv_hist_traj(k)) !divide by nttot
+              ! ------------- end Line
+              error = error + minuslogL
+              nave  = nave + 1
             if (iopt.eq.opt_niter) then
               ! note: a=-beta*D*F'+D'
               obs_noise = (dq-a(ig)*ddt)/dsqrt(2.d0*D(ig)*ddt)
-              write(654,'(f12.6,f12.6)') colvar(j,1),obs_noise
+              write(654,'(f24.6,f12.6)') colvar(j,1),obs_noise
             endif
             if (test_propagator) then 
                call prop_via_traj(q,q2,dt*dtmult,qlast)
@@ -226,7 +237,8 @@ subroutine compute_error(error,type_err,iprintGauss)
               write(123,'(f9.5)') sqrt(1.d0/Mqq)*qq
             endif
           enddo
-        enddo
+          enddo
+        write(33,*) a(ig),Mq,Mqq,da(ig)
         error = error/dble(nave)
         if (test_propagator) then 
           write(60,'(A,2E14.6)') "# average errors (Likelihood, Kolmogorov-Smirnov) = ", &

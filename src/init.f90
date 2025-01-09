@@ -146,6 +146,14 @@ subroutine read_input
   if (trim(keyword)/="ntraj_prop") call error("input: expected keyword ntraj_prop")
   write(*,*) keyword,ntraj_prop
   !
+  read(55,*) keyword,weight_nll
+  if (trim(keyword)/="weight_nll") call error("input: expected keyword weight_nll")
+  write(*,*) keyword,weight_nll
+  !
+  read(55,*) keyword,prop_order
+  if (trim(keyword)/="prop_order") call error("input: expected keyword prop_order")
+  write(*,*) keyword,prop_order
+  !
   close(55)
   !
   write(*,*) ""
@@ -309,6 +317,25 @@ subroutine read_input
   write(*,'(A,I9)')          " number of MD shooting trajectories = ",ntraj_MD
 !  if (ntraj_MD.ne.nint((1.d0*nttot)/nt)) call error("number of MD traj must be equal to total frames / frames per traj")
   if (ntraj_MD.ne.nint((1.d0*nttot)/nt)) write(*,*) "WARNING: number of MD traj must be equal to total frames / frames per traj"
+  !--------------------- Line added histogram analysis
+  bin_width = ((xmax - xmin)*1.000001) / nbins
+  hist_traj = 0
+  ! Assign each data point to a bin
+  do j = 1, nttot
+     bin_index = int((colvar(j,2) - xmin) / bin_width) + 1
+     hist_traj(bin_index) = hist_traj(bin_index) + 1.d0
+  enddo
+  hist_traj(:)=hist_traj(:)/sum(hist_traj(:))
+  inv_hist_traj(:)=1  ! inv hist is 1 everywhere
+  do j = 1, nbins
+     lower_bound(j) = xmin + (j - 1) * bin_width
+     upper_bound(j) = lower_bound(j) + bin_width
+     if (weight_nll .eq. 1 .and. hist_traj(j) .gt. 0.05) then
+             inv_hist_traj(j) = 0.05/hist_traj(j) !we penalize regions where we have many points
+     endif
+     write(2806, "(F10.3, A, F10.3, A, F10.6, F10.6)") lower_bound(j), " - ", upper_bound(j), ": ", hist_traj(j), inv_hist_traj(j)
+  enddo
+  inv_hist_traj(:) = inv_hist_traj(:)/(nttot-ntraj_MD) ! like this we divide the likelihood by the number of contributions
   !----------------------------- read RESTART
   ! if (restart.eq.1) then
     write(*,*) ""
