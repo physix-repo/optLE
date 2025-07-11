@@ -15,8 +15,10 @@ module common_var
   double precision :: mass0,gamm,taug
   double precision :: dxgrid,dxgrid2
   integer, parameter :: ngrid=1000 ! this is arbitrary...
-  double precision :: prof_F(ngrid),prof_force(ngrid),prof_g(ngrid),prof_m(ngrid)
+  double precision :: prof_F(ngrid),prof_force(ngrid),prof_g(ngrid),prof_m(ngrid),prof_gCorr(ngrid)
   double precision :: max_Gaussian_h(3),max_Gaussian_w(3)
+  double precision :: gcorrected
+  integer :: updateG=10000
 !
 end module common_var
 !================================================================================

@@ -37,7 +37,7 @@ subroutine read_input
   implicit none
   character :: keyword*20,colvar_file*40
   character :: line*100
-  double precision :: tmp1,tmp2,x,lambda, gCorrection1, gCorrection2
+  double precision :: tmp1,tmp2,x,lambda, gCorrection1, gCorrection2,gcorrection
   integer :: i,j,it
   !
   !----------------------------------------------- read input file
@@ -150,6 +150,11 @@ subroutine read_input
   if (trim(keyword)/="lambda") call error("input: expected keyword lambda")
   write(*,*) keyword,lambda
   !
+  read(55,*) keyword,gcorrection
+  if (trim(keyword)/="gcorrection") call error("input: expected keyword gcorrection")
+  write(*,*) keyword,gcorrection
+  gcorrected = gcorrection
+  !
   close(55)
   !
   write(*,*) ""
@@ -257,7 +262,7 @@ subroutine read_input
   allocate(colvar(nttot,4)) ! time q dq/dt
   it=0
   do j=1,nttot
-    read(66,*) colvar(j,1),colvar(j,2)!colvar(j,4)
+    read(66,*) colvar(j,1),colvar(j,2)!,colvar(j,4)
     if (colvar(j,1).lt.dt/10.) then ! fill x0 with points x(t=0)
       ! note: the syntax in if() here above is a complicated way of testing if t=0 ...
       it=it+1
@@ -341,6 +346,7 @@ subroutine read_input
       if (i.eq.1    .and.abs(x-xmin)>dxgrid) call error("xmin is different from first position in RESTART")
       if (i.eq.ngrid.and.abs(x-xmax)>dxgrid) call error("xmax is different from last  position in RESTART")
     enddo
+    prof_gCorr(:)=prof_g(:)
     close(35) 
     !
     call update_prof_force ! important, every time prof_F is changed!

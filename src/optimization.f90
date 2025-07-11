@@ -254,6 +254,11 @@ subroutine optimize_Pmod
       endif
     endif
     !
+    ! if (mod(iopt,updateG)==0) then
+    !   gcorrected = prof_g(1)
+    !   write(*,*) gcorrected
+    !   prof_g(:) = 0.1d0
+    ! endif
     
     call flush()
   enddo ! opt loop
